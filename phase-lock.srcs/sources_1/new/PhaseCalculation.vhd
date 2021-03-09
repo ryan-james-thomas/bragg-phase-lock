@@ -15,7 +15,11 @@ entity PhaseCalculation is
         s_axis1_tvalid  :   std_logic;
         
         s_axis2_tdata   :   std_logic_vector(31 downto 0);
-        s_axis2_tvalid  :   std_logic
+        s_axis2_tvalid  :   std_logic;
+        
+        reg0            :   in  t_param_reg;
+        mem_bus_m       :   in  t_mem_bus_master;
+        mem_bus_s       :   out t_mem_bus_slave
 
     );
 end PhaseCalculation;
@@ -91,25 +95,59 @@ COMPONENT PhaseCalc
   );
 END COMPONENT;
 
+component BlockMemHandler is
+    port(
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+        
+        data_i      :   in  std_logic_vector;
+        valid_i     :   in  std_logic;
+        
+        bus_m       :   in  t_mem_bus_master;
+        bus_s       :   out t_mem_bus_slave
+    );
+end component;
 
+--
+-- FIFO signals
+--
 signal fifo_i   :   std_logic_vector(13 downto 0);
 signal fifo_o   :   std_logic_vector(13 downto 0);
+
+--
+-- Mixing signals
+--
 signal dds_sin  :   std_logic_vector(13 downto 0);
 signal dds_cos  :   std_logic_vector(13 downto 0);
-
 signal I, Q     :   std_logic_vector(27 downto 0);
+
+--
+-- Downsampling/fast averaging signals
+--
 signal Ids, Qds :   std_logic_vector(13 downto 0);
 signal validAvg :   std_logic;
 signal reduceReg:   t_param_reg;
 
+--
+-- Low-pass filter signals
+--
 signal Ilp, Qlp :   std_logic_vector(13 downto 0);
 signal lpParam  :   t_param_reg;
 signal validLP  :   std_logic;
 
+--
+-- Phase calculation signals
+--
 signal tdataPhase   :   std_logic_vector(31 downto 0);
 signal phase        :   std_logic_vector(15 downto 0);
 signal validPhase   :   std_logic;
 
+--
+-- Memory signals
+--
+signal memSwitch    :   std_logic_vector(3 downto 0);
+signal memData_i    :   std_logic_vector(15 downto 0);
+signal memValid_i   :   std_logic;
 
 begin
 
@@ -187,7 +225,6 @@ port map(
 --
 -- Compute phase via arctan
 --
-
 MakePhase: PhaseCalc
 PORT MAP (
     aclk                    => sysClk,
@@ -197,6 +234,26 @@ PORT MAP (
     s_axis_cartesian_tdata  => tdataPhase,
     m_axis_dout_tvalid      => validPhase,
     m_axis_dout_tdata       => phase
+);
+
+--
+-- Save data
+--
+memSwitch <= reg0(3 downto 0);
+
+memData_i <=    std_logic_vector(resize(signed(fifo_o),memData_i'length)) when memSwitch = X"F" else
+                phase;
+memValid_i <=   '1' when memSwitch = X"F" else
+                validPhase;                
+
+SaveData: BlockMemHandler
+port map(
+    clk         =>  sysClk,
+    aresetn     =>  aresetn,
+    data_i      =>  memData_i,
+    valid_i     =>  memValid_i,
+    bus_m       =>  mem_bus_m,
+    bus_s       =>  mem_bus_s
 );
 
 end Behavioral;

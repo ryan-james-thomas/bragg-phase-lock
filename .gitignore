@@ -7,3 +7,4 @@ phase-lock.srcs/sources_1/ip/*/*
 
 !vhdl-sources/
 
+*.asv

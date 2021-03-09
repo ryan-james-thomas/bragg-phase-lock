@@ -19,13 +19,13 @@ end Simple_FIFO;
 architecture Behavioral of Simple_FIFO is
 
 constant BUF_SIZE   :   integer :=  4;
-constant BUF_LENGTH :   integer :=  1;
+constant BUF_LENGTH :   integer :=  2;
 
 subtype t_adc_data is std_logic_vector(data_o'length-1 downto 0);
 type t_adc_fifo is array(integer range 0 to BUF_SIZE-1) of t_adc_data;
 
 signal fifo_data        :   t_adc_fifo  :=  (others => (others => '0'));
-signal wr_ptr, rd_ptr   :   unsigned(1 downto 0)   :=  (others => '0');
+signal wr_ptr, rd_ptr   :   unsigned(BUF_LENGTH-1 downto 0)   :=  (others => '0');
 
 begin
 

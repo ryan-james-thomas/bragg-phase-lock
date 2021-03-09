@@ -25,8 +25,8 @@ subtype t_adc_combined is std_logic_vector(31 downto 0);
 --
 -- Defines AXI address and data widths
 --
-constant MEM_ADDR_WIDTH :   natural :=  14;
-constant MEM_DATA_WIDTH :   natural :=  32;
+constant MEM_ADDR_WIDTH :   natural :=  13;
+constant MEM_DATA_WIDTH :   natural :=  16;
 
 --
 -- Defines MEM address and data signals
