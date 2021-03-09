@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="Simple_FIFO_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="Simple_FIFO_tb" />
+            <top_module name="axi_bus_package" />
+            <top_module name="customdatatypes" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="192101fs"></ZoomEndTime>
+      <Cursor1Time time="1000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="533"></NameColumnWidth>
+      <ValueColumnWidth column_width="251"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="10" />
+   <wvobject fp_name="/Simple_FIFO_tb/wr_clk" type="logic">
+      <obj_property name="ElementShortName">wr_clk</obj_property>
+      <obj_property name="ObjectShortName">wr_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/rd_clk" type="logic">
+      <obj_property name="ElementShortName">rd_clk</obj_property>
+      <obj_property name="ObjectShortName">rd_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/aresetn" type="logic">
+      <obj_property name="ElementShortName">aresetn</obj_property>
+      <obj_property name="ObjectShortName">aresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/data_i" type="array">
+      <obj_property name="ElementShortName">data_i[13:0]</obj_property>
+      <obj_property name="ObjectShortName">data_i[13:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/data_o" type="array">
+      <obj_property name="ElementShortName">data_o[13:0]</obj_property>
+      <obj_property name="ObjectShortName">data_o[13:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/WR_CLK_T" type="other">
+      <obj_property name="ElementShortName">WR_CLK_T</obj_property>
+      <obj_property name="ObjectShortName">WR_CLK_T</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/RD_CLK_T" type="other">
+      <obj_property name="ElementShortName">RD_CLK_T</obj_property>
+      <obj_property name="ObjectShortName">RD_CLK_T</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/uut/wr_ptr" type="array">
+      <obj_property name="ElementShortName">wr_ptr[1:0]</obj_property>
+      <obj_property name="ObjectShortName">wr_ptr[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/uut/rd_ptr" type="array">
+      <obj_property name="ElementShortName">rd_ptr[1:0]</obj_property>
+      <obj_property name="ObjectShortName">rd_ptr[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/Simple_FIFO_tb/uut/fifo_data" type="array">
+      <obj_property name="ElementShortName">fifo_data[0:3][13:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_data[0:3][13:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+</wave_config>
