@@ -1,0 +1,9 @@
+*.xpr
+*phase-lock*/
+!phase-lock.srcs/
+phase-lock.srcs/sources_1/bd/
+phase-lock.srcs/sources_1/ip/*/*
+!phase-lock.srcs/sources_1/ip/**/*.xci
+
+!vhdl-sources/
+
