@@ -7,17 +7,15 @@ use work.AXI_Bus_Package.all;
 
 entity PhaseCalculation is
     port(
-        sysClk          :   in  std_logic;
-        adcClk          :   in  std_logic;
+        clk             :   in  std_logic;
         aresetn         :   in  std_logic;
         
-        s_axis1_tdata   :   std_logic_vector(31 downto 0);
-        s_axis1_tvalid  :   std_logic;
+        adcData_i       :   in  t_adc;
+        freqDiff        :   in  unsigned;
         
-        s_axis2_tdata   :   std_logic_vector(31 downto 0);
-        s_axis2_tvalid  :   std_logic;
         
         reg0            :   in  t_param_reg;
+        reg1            :   in  t_param_reg;
         mem_bus_m       :   in  t_mem_bus_master;
         mem_bus_s       :   out t_mem_bus_slave
 
@@ -26,16 +24,16 @@ end PhaseCalculation;
 
 architecture Behavioral of PhaseCalculation is
 
-component Simple_FIFO is
-    port (
-        wr_clk  :   in  std_logic;
-        rd_clk  :   in  std_logic;
-        aresetn :   in  std_logic;
-        
-        data_i  :   in  std_logic_vector;
-        data_o  :   out std_logic_vector
-    );
-end component;
+COMPONENT MixingDDS
+  PORT (
+    aclk : IN STD_LOGIC;
+    aresetn : IN STD_LOGIC;
+    s_axis_phase_tvalid : IN STD_LOGIC;
+    s_axis_phase_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+  );
+END COMPONENT;
 
 COMPONENT MultMixer
   PORT (
@@ -46,23 +44,20 @@ COMPONENT MultMixer
   );
 END COMPONENT;
 
-component QuickAvg is
-    generic(
-        DATA_WIDTH  :   natural :=  14
-    );
-    port(
-        clk         :   in  std_logic;
-        aresetn     :   in  std_logic;
-        
-        reg0        :   in  t_param_reg;
-        
-        adcData1_i  :   in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        adcData2_i  :   in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        adcData1_o  :   out std_logic_vector(DATA_WIDTH-1 downto 0);
-        adcData2_o  :   out std_logic_vector(DATA_WIDTH-1 downto 0);
-        valid_o     :   out std_logic
-    );
-end component;
+COMPONENT CIC_Decimate
+  PORT (
+    aclk : IN STD_LOGIC;
+    aresetn : IN STD_LOGIC;
+    s_axis_config_tdata : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+    s_axis_config_tvalid : IN STD_LOGIC;
+    s_axis_config_tready : OUT STD_LOGIC;
+    s_axis_data_tdata : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+    s_axis_data_tvalid : IN STD_LOGIC;
+    s_axis_data_tready : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(47 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC
+  );
+END COMPONENT;
 
 component SimpleLowPass is
     generic(
@@ -109,24 +104,23 @@ component BlockMemHandler is
 end component;
 
 --
--- FIFO signals
---
-signal fifo_i   :   std_logic_vector(13 downto 0);
-signal fifo_o   :   std_logic_vector(13 downto 0);
-
---
 -- Mixing signals
 --
-signal dds_sin  :   std_logic_vector(13 downto 0);
-signal dds_cos  :   std_logic_vector(13 downto 0);
-signal I, Q     :   std_logic_vector(27 downto 0);
+signal mixPhase_slv     :   std_logic_vector(PHASE_WIDTH-1 downto 0);
+signal dds_combined     :   std_logic_vector(31 downto 0);
+signal dds_sin          :   std_logic_vector(13 downto 0);
+signal dds_cos          :   std_logic_vector(13 downto 0);
+signal I, Q             :   std_logic_vector(27 downto 0);
 
 --
 -- Downsampling/fast averaging signals
 --
-signal Ids, Qds :   std_logic_vector(13 downto 0);
-signal validAvg :   std_logic;
-signal reduceReg:   t_param_reg;
+signal cicRate          :   unsigned(10 downto 0);
+signal cicConfig_i      :   std_logic_vector(15 downto 0);
+signal cicI_i, cicQ_i   :   std_logic_vector(15 downto 0);
+
+signal cicI_o, cicQ_o   :   std_logic_vector(47 downto 0);
+signal validIcic, validQcic         :   std_logic;
 
 --
 -- Low-pass filter signals
@@ -152,37 +146,37 @@ signal memValid_i   :   std_logic;
 begin
 
 --
--- Use a very simple FIFO to switch ADC data from
--- adcClk to sysClk
+-- Generate mixing signals
 --
-fifo_i <= s_axis1_tdata(13 downto 0);
-FIFO1: Simple_FIFO
+mixPhase_slv <= std_logic_vector(resize(freqDiff,PHASE_WIDTH));
+MixGeneration: MixingDDS
 port map(
-    wr_clk  =>  adcClk,
-    rd_clk  =>  sysClk,
-    aresetn =>  aresetn,
-    data_i  =>  fifo_i,
-    data_o  =>  fifo_o
+    aclk                => clk,
+    aresetn             => aresetn,
+    s_axis_phase_tvalid => '1',
+    s_axis_phase_tdata  => mixPhase_slv,
+    m_axis_data_tvalid  => open,
+    m_axis_data_tdata   => dds_combined
 );
 
 --
 -- Multiply the input signal with the I and Q mixing signals
 --
-dds_cos <= s_axis2_tdata(13 downto 0);
-dds_sin <= s_axis2_tdata(29 downto 16);
+dds_cos <= std_logic_vector(resize(signed(dds_combined(9 downto 0)),dds_cos'length));
+dds_sin <= std_logic_vector(resize(signed(dds_combined(29 downto 16)),dds_sin'length));
 
 I_Mixer: MultMixer
 port map(
-    CLK =>  sysClk,
-    A   =>  fifo_o,
+    CLK =>  clk,
+    A   =>  std_logic_vector(adcData_i),
     B   =>  dds_cos,
     P   =>  I
 );
 
 Q_Mixer: MultMixer
 port map(
-    CLK =>  sysClk,
-    A   =>  fifo_o,
+    CLK =>  clk,
+    A   =>  std_logic_vector(adcData_i),
     B   =>  dds_sin,
     P   =>  Q
 );
@@ -190,19 +184,38 @@ port map(
 --
 -- Filter I and Q
 --
-SampleReduce: QuickAvg
-generic map(
-    DATA_WIDTH  =>  I'length
-)
+cicRate <= unsigned(reg1(3 downto 0));
+cicConfig_i(11 downto 0) <= std_logic_vector(shift_left(to_unsigned(1,12),to_integer(cicRate)));
+cicConfig_i(15 downto 12) <= (others => '0');
+cicI_i <= std_logic_vector(resize(signed(I),cicI_i'length));
+cicQ_i <= std_logic_vector(resize(signed(Q),cicQ_i'length));
+
+I_decimate: CIC_Decimate
 port map(
-    clk         =>  sysClk,
-    aresetn     =>  aresetn,
-    reg0        =>  reduceReg,
-    adcData1_i  =>  I,
-    adcData2_i  =>  Q,
-    adcData1_o  =>  Ids,
-    adcData2_o  =>  Qds,
-    valid_o     =>  validAvg
+    aclk                    => clk,
+    aresetn                 => aresetn,
+    s_axis_config_tdata     => cicConfig_i,
+    s_axis_config_tvalid    => '1',
+    s_axis_config_tready    => open,
+    s_axis_data_tdata       => cicI_i,
+    s_axis_data_tvalid      => '1',
+    s_axis_data_tready      => open,
+    m_axis_data_tdata       => cicI_o,
+    m_axis_data_tvalid      => validIcic
+);
+
+Q_decimate: CIC_Decimate
+port map(
+    aclk                    => clk,
+    aresetn                 => aresetn,
+    s_axis_config_tdata     => cicConfig_i,
+    s_axis_config_tvalid    => '1',
+    s_axis_config_tready    => open,
+    s_axis_data_tdata       => cicQ_i,
+    s_axis_data_tvalid      => '1',
+    s_axis_data_tready      => open,
+    m_axis_data_tdata       => cicQ_o,
+    m_axis_data_tvalid      => validQcic
 );
 
 LP: SimpleLowPass

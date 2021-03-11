@@ -7,8 +7,8 @@ use work.AXI_Bus_Package.all;
  
 entity topmod is
     port (
-        clk     :   in  std_logic;
-        aresetn :   in  std_logic;
+        clk             :   in  std_logic;
+        aresetn         :   in  std_logic;
  
         addr_i          :   in  unsigned(AXI_ADDR_WIDTH-1 downto 0);            --Address out
         writeData_i     :   in  std_logic_vector(AXI_DATA_WIDTH-1 downto 0);    --Data to write
@@ -16,14 +16,13 @@ entity topmod is
         readData_o      :   out std_logic_vector(AXI_DATA_WIDTH-1 downto 0);    --Data to read
         resp_o          :   out std_logic_vector(1 downto 0);                   --Response in
         
-        m_axis1_tdata    :   out std_logic_vector(63 downto 0);
-        m_axis1_tvalid   :   out std_logic;
+        m_axis1_tdata   :   out std_logic_vector(63 downto 0);
+        m_axis1_tvalid  :   out std_logic;
         
         m_axis2_tdata   :   out std_logic_vector(31 downto 0);
         m_axis2_tvalid  :   out std_logic;
         
-        m_axis3_tdata   :   out std_logic_vector(31 downto 0);
-        m_axis3_tvalid  :   out std_logic
+        adcData_i       :   in  std_logic_vector
     );
 end topmod;
  
@@ -43,24 +42,35 @@ signal bus_s    :   t_axi_bus_slave   :=  INIT_AXI_BUS_SLAVE;
 signal f0, df       :   unsigned(31 downto 0)   :=  (others => '0');
 signal pow          :   unsigned(31 downto 0)   :=  (others => '0');
 
-
+--
+-- ADC data
+--
+signal adc          :   t_adc   :=  (others => '0');
 
 begin
- 
+
+--
+-- DDS output signals
+--
+m_axis1_tdata <= std_logic_vector(pow) & std_logic_vector(f0 + df);
+m_axis1_tvalid <= '1';
+m_axis2_tdata <= std_logic_vector(f0 - df);
+m_axis2_tvalid <= '1';
+
+--
+-- ADC signals
+--
+adc <= signed(adcData_i(adc'length-1 downto 0));
+
+
+--
+-- Parse AXI data
+-- 
 bus_m.addr <= addr_i;
 bus_m.valid <= dataValid_i;
 bus_m.data <= writeData_i;
 readData_o <= bus_s.data;
 resp_o <= bus_s.resp;
-
-
-m_axis1_tdata <= std_logic_vector(pow) & std_logic_vector(f0 + df);
-m_axis1_tvalid <= '1';
-m_axis2_tdata <= std_logic_vector(f0 - df);
-m_axis2_tvalid <= '1';
-m_axis3_tdata <= std_logic_vector(shift_left(df,3));
-m_axis3_tvalid <= '1';
- 
 Parse: process(clk,aresetn) is
 begin
     if aresetn = '0' then
