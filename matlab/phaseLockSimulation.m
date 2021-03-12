@@ -7,7 +7,7 @@ dt = 1/Fs;
 fin = 250e3*1;
 T = 10e-3;
 t = (0:dt:T)';
-phin = 0.25 + cumsum(1e-3*randn(size(t)));
+phin = (2*pi*randn-pi)/2 + cumsum(1e-3*randn(size(t)));
 x = sin(2*pi*fin*t + phin);
 
 %% Mixed signal
@@ -52,9 +52,9 @@ plot(tavg,ph,'.-');
 % plot(tavg,phf);
 hold off;
 
-window = ones(round(numel(phin)/8),1);
+window = ones(round(numel(phin)/4),1);
 [P0,f0] = pwelch(phin,window,[],[],1/dt);
-window = ones(round(numel(ph)/8),1);
+window = ones(round(numel(ph)/4),1);
 [P,f] = pwelch(ph,window,[],[],1/dtnew);
 figure(2);clf;
 loglog(f0,P0);

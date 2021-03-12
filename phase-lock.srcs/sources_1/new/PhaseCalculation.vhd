@@ -7,18 +7,20 @@ use work.AXI_Bus_Package.all;
 
 entity PhaseCalculation is
     port(
-        clk             :   in  std_logic;
-        aresetn         :   in  std_logic;
+        clk             :   in  std_logic;          --Master system clock
+        aresetn         :   in  std_logic;          --Asynchronous active-low reset
         
-        adcData_i       :   in  t_adc;
-        freqDiff        :   in  unsigned;
+        adcData_i       :   in  t_adc;              --ADC data synchronous with clk
         
+        freq_i          :   in  t_dds_phase;        --Frequency difference used for mixing DDS             
+        reg0            :   in  t_param_reg;        --Bits [31,28]: memSwitch, [3,0]: log2(cicRate)
+        regValid_i      :   in  std_logic;
         
-        reg0            :   in  t_param_reg;
-        reg1            :   in  t_param_reg;
-        mem_bus_m       :   in  t_mem_bus_master;
-        mem_bus_s       :   out t_mem_bus_slave
-
+        mem_bus_m       :   in  t_mem_bus_master;   --Master memory bus
+        mem_bus_s       :   out t_mem_bus_slave;    --Slave memory bus
+        
+        phase_o         :   out t_phase;            --Output phase
+        valid_o         :   out std_logic           --Output phase valid signal
     );
 end PhaseCalculation;
 
@@ -59,25 +61,6 @@ COMPONENT CIC_Decimate
   );
 END COMPONENT;
 
-component SimpleLowPass is
-    generic(
-        DATA_WIDTH  :   natural :=  14;
-        FILT_WIDTH  :   natural :=  16
-    );
-    port(
-        clk     :   in  std_logic;
-        aresetn :   in  std_logic;
-        
-        trig_i  :   in  std_logic;
-        data1_i :   in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        data2_i :   in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        param   :   in  t_param_reg;
-        data1_o :   out std_logic_vector(DATA_WIDTH-1 downto 0);
-        data2_o :   out std_logic_vector(DATA_WIDTH-1 downto 0);
-        valid_o :   out std_logic
-    );
-end component;
-
 COMPONENT PhaseCalc
   PORT (
     aclk : IN STD_LOGIC;
@@ -106,7 +89,7 @@ end component;
 --
 -- Mixing signals
 --
-signal mixPhase_slv     :   std_logic_vector(PHASE_WIDTH-1 downto 0);
+signal mixPhase_slv     :   std_logic_vector(31 downto 0);
 signal dds_combined     :   std_logic_vector(31 downto 0);
 signal dds_sin          :   std_logic_vector(13 downto 0);
 signal dds_cos          :   std_logic_vector(13 downto 0);
@@ -115,19 +98,17 @@ signal I, Q             :   std_logic_vector(27 downto 0);
 --
 -- Downsampling/fast averaging signals
 --
-signal cicRate          :   unsigned(10 downto 0);
-signal cicConfig_i      :   std_logic_vector(15 downto 0);
-signal cicI_i, cicQ_i   :   std_logic_vector(15 downto 0);
+signal cicRate              :   unsigned(7 downto 0);
+signal cicConfig_i          :   std_logic_vector(15 downto 0);
+signal cicI_i, cicQ_i       :   std_logic_vector(15 downto 0);
 
-signal cicI_o, cicQ_o   :   std_logic_vector(47 downto 0);
-signal validIcic, validQcic         :   std_logic;
+signal cicI_o, cicQ_o       :   std_logic_vector(47 downto 0);
+signal validIcic, validQcic :   std_logic;
 
---
--- Low-pass filter signals
---
-signal Ilp, Qlp :   std_logic_vector(13 downto 0);
-signal lpParam  :   t_param_reg;
-signal validLP  :   std_logic;
+signal Iphase_i, Qphase_i   :   std_logic_vector(15 downto 0);
+signal validPhase_i         :   std_logic;
+
+signal cicI_test,cicQ_test  :   signed(47 downto 0);
 
 --
 -- Phase calculation signals
@@ -146,9 +127,15 @@ signal memValid_i   :   std_logic;
 begin
 
 --
+-- Parse parameters
+--
+memSwitch <= reg0(31 downto 28);
+cicRate <= unsigned(reg0(7 downto 0));
+
+--
 -- Generate mixing signals
 --
-mixPhase_slv <= std_logic_vector(resize(freqDiff,PHASE_WIDTH));
+mixPhase_slv <= std_logic_vector(resize(freq_i,mixPhase_slv'length));
 MixGeneration: MixingDDS
 port map(
     aclk                => clk,
@@ -184,7 +171,6 @@ port map(
 --
 -- Filter I and Q
 --
-cicRate <= unsigned(reg1(3 downto 0));
 cicConfig_i(11 downto 0) <= std_logic_vector(shift_left(to_unsigned(1,12),to_integer(cicRate)));
 cicConfig_i(15 downto 12) <= (others => '0');
 cicI_i <= std_logic_vector(resize(signed(I),cicI_i'length));
@@ -195,7 +181,7 @@ port map(
     aclk                    => clk,
     aresetn                 => aresetn,
     s_axis_config_tdata     => cicConfig_i,
-    s_axis_config_tvalid    => '1',
+    s_axis_config_tvalid    => regValid_i,
     s_axis_config_tready    => open,
     s_axis_data_tdata       => cicI_i,
     s_axis_data_tvalid      => '1',
@@ -209,7 +195,7 @@ port map(
     aclk                    => clk,
     aresetn                 => aresetn,
     s_axis_config_tdata     => cicConfig_i,
-    s_axis_config_tvalid    => '1',
+    s_axis_config_tvalid    => regValid_i,
     s_axis_config_tready    => open,
     s_axis_data_tdata       => cicQ_i,
     s_axis_data_tvalid      => '1',
@@ -218,50 +204,42 @@ port map(
     m_axis_data_tvalid      => validQcic
 );
 
-LP: SimpleLowPass
-generic map(
-    DATA_WIDTH      =>  I'length,
-    FILT_WIDTH      =>  16
-)
-port map(
-    clk         =>  sysClk,
-    aresetn     =>  aresetn,
-    trig_i      =>  validAvg,
-    data1_i     =>  Ids,
-    data2_i     =>  Qds,
-    param       =>  lpParam,
-    data1_o     =>  Ilp,
-    data2_o     =>  Qlp,
-    valid_o     =>  validLP
-);
-
 --
 -- Compute phase via arctan
 --
+validPhase_i <= validQcic and validIcic;
+cicI_test <= shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate));
+cicQ_test <= shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate));
+Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length));
+Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length));
+tdataPhase <= Qphase_i & Iphase_i;
 MakePhase: PhaseCalc
 PORT MAP (
-    aclk                    => sysClk,
+    aclk                    => clk,
     aresetn                 => aresetn,
-    s_axis_cartesian_tvalid => validLP,
+    s_axis_cartesian_tvalid => validPhase_i,
     s_axis_cartesian_tready => open,
     s_axis_cartesian_tdata  => tdataPhase,
     m_axis_dout_tvalid      => validPhase,
     m_axis_dout_tdata       => phase
 );
 
+valid_o <= validPhase;
+phase_o <= signed(phase);
+
 --
 -- Save data
 --
 memSwitch <= reg0(3 downto 0);
 
-memData_i <=    std_logic_vector(resize(signed(fifo_o),memData_i'length)) when memSwitch = X"F" else
+memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
                 phase;
 memValid_i <=   '1' when memSwitch = X"F" else
                 validPhase;                
 
 SaveData: BlockMemHandler
 port map(
-    clk         =>  sysClk,
+    clk         =>  clk,
     aresetn     =>  aresetn,
     data_i      =>  memData_i,
     valid_i     =>  memValid_i,

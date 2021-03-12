@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="CIC_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="CIC_tb" />
+            <top_module name="axi_bus_package" />
+            <top_module name="customdatatypes" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="12415001fs"></ZoomEndTime>
+      <Cursor1Time time="101000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="533"></NameColumnWidth>
+      <ValueColumnWidth column_width="243"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="12" />
+   <wvobject fp_name="/CIC_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/aresetn" type="logic">
+      <obj_property name="ElementShortName">aresetn</obj_property>
+      <obj_property name="ObjectShortName">aresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/config_tdata" type="array">
+      <obj_property name="ElementShortName">config_tdata[15:0]</obj_property>
+      <obj_property name="ObjectShortName">config_tdata[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/config_tvalid" type="logic">
+      <obj_property name="ElementShortName">config_tvalid</obj_property>
+      <obj_property name="ObjectShortName">config_tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/tdata" type="array">
+      <obj_property name="ElementShortName">tdata[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tdata[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/tvalid" type="logic">
+      <obj_property name="ElementShortName">tvalid</obj_property>
+      <obj_property name="ObjectShortName">tvalid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/tdata_o" type="array">
+      <obj_property name="ElementShortName">tdata_o[47:0]</obj_property>
+      <obj_property name="ObjectShortName">tdata_o[47:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/tvalid_o" type="logic">
+      <obj_property name="ElementShortName">tvalid_o</obj_property>
+      <obj_property name="ObjectShortName">tvalid_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/CLK_T" type="other">
+      <obj_property name="ElementShortName">CLK_T</obj_property>
+      <obj_property name="ObjectShortName">CLK_T</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/tready" type="logic">
+      <obj_property name="ElementShortName">tready</obj_property>
+      <obj_property name="ObjectShortName">tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/config_tready" type="logic">
+      <obj_property name="ElementShortName">config_tready</obj_property>
+      <obj_property name="ObjectShortName">config_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CIC_tb/shift_o" type="array">
+      <obj_property name="ElementShortName">shift_o[15:0]</obj_property>
+      <obj_property name="ObjectShortName">shift_o[15:0]</obj_property>
+   </wvobject>
+</wave_config>

@@ -7,8 +7,8 @@ for nn = 1:N
 end
 
 %% Rate reduction
-tr = t(1:R:end);
-xr = xx(1:R:end,:);
+tr = t(R:R:end);
+xr = xx(R:R:end,:);
 
 %% Comb
 xx = xr;
