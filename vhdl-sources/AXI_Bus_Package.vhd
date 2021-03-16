@@ -10,6 +10,8 @@ use work.CustomDataTypes.all;
 --
 package AXI_Bus_Package is
 
+constant NASLV : std_logic_vector(0 downto 1) := (others => '0');
+
 --
 -- Defines AXI address and data widths
 --
@@ -58,6 +60,8 @@ constant INIT_AXI_BUS_SLAVE     :   t_axi_bus_slave     :=  (data   =>  (others 
 constant INIT_AXI_BUS           :   t_axi_bus           :=  (m      =>  INIT_AXI_BUS_MASTER,
                                                              s      =>  INIT_AXI_BUS_SLAVE);
 
+function resize ( ARG: std_logic_vector; NEW_SIZE: NATURAL) return std_logic_vector;
+
 procedure rw(
     signal bus_i    :   in      t_axi_bus_master;
     signal bus_o    :   out     t_axi_bus_slave;
@@ -94,6 +98,26 @@ end AXI_Bus_Package;
 --------------------------------------------------------------------------------------------------
 package body AXI_Bus_Package is
 
+function resize ( ARG: std_logic_vector; NEW_SIZE: NATURAL) return std_logic_vector is
+    constant ARG_LEFT:INTEGER:= ARG'length-1;
+    alias XARG: std_logic_vector(ARG_LEFT downto 0) is ARG;
+    variable RESULT: std_logic_vector(NEW_SIZE-1 downto 0) := (others=>'0');
+begin
+    if (NEW_SIZE < 1) then 
+        return NASLV; 
+    end if;
+    if XARG'length = 0 then 
+        return RESULT;
+    end if;
+    if (RESULT'length < ARG'length) then
+        RESULT(RESULT'left downto 0) := XARG(RESULT'left downto 0);
+    else
+        RESULT(RESULT'left downto XARG'left+1) := (others => '0');
+        RESULT(XARG'left downto 0) := XARG;
+    end if;
+    return RESULT;
+end RESIZE;
+
 procedure rw(
     signal bus_i    :   in      t_axi_bus_master;
     signal bus_o    :   out     t_axi_bus_slave;
@@ -118,9 +142,9 @@ begin
     bus_o.resp <= "01";
     state <= finishing;
     if bus_i.valid(1) = '0' then
-        param <= bus_i.data(param'length-1 downto 0);
+        param <= resize(bus_i.data,param'length);
     else
-        bus_o.data <= (AXI_DATA_WIDTH-1 downto param'length => '0') & param;
+        bus_o.data <= resize(param,AXI_DATA_WIDTH);
     end if;
 end rw;
 
@@ -135,7 +159,7 @@ begin
     if bus_i.valid(1) = '0' then
         param <= unsigned(bus_i.data(param'length-1 downto 0));
     else
-        bus_o.data <= (AXI_DATA_WIDTH-1 downto param'length => '0') & std_logic_vector(param);
+        bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
 end rw;
 
@@ -150,7 +174,7 @@ begin
     if bus_i.valid(1) = '0' then
         param <= signed(bus_i.data(param'length-1 downto 0));
     else
-        bus_o.data <= (AXI_DATA_WIDTH-1 downto param'length => '0') & std_logic_vector(param);
+        bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
 end rw;
 
@@ -165,7 +189,7 @@ begin
         bus_o.resp <= "11";
     else
         bus_o.resp <= "01";
-        bus_o.data <= (AXI_DATA_WIDTH-1 downto param'length => '0') & std_logic_vector(param);
+        bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
 end readOnly;
 

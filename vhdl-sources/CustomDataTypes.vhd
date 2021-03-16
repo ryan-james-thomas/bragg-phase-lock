@@ -12,7 +12,7 @@ package CustomDataTypes is
 -- Constants
 --
 constant PARAM_WIDTH        :   natural :=  32;
-constant PHASE_WIDTH        :   natural :=  28;
+constant PHASE_WIDTH        :   natural :=  32;
 
 subtype t_param_reg is std_logic_vector(PARAM_WIDTH-1 downto 0);
 subtype t_adc_combined is std_logic_vector(31 downto 0);

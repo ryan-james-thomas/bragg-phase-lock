@@ -13,15 +13,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="34122850fs"></ZoomStartTime>
-      <ZoomEndTime time="35497851fs"></ZoomEndTime>
-      <Cursor1Time time="69112700fs"></Cursor1Time>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="1000001fs"></ZoomEndTime>
+      <Cursor1Time time="69112fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="533"></NameColumnWidth>
-      <ValueColumnWidth column_width="227"></ValueColumnWidth>
+      <ValueColumnWidth column_width="219"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="27" />
+   <WVObjectSize size="28" />
    <wvobject fp_name="/PhaseCalculation_tb/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -36,8 +36,8 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/freq_i" type="array">
-      <obj_property name="ElementShortName">freq_i[27:0]</obj_property>
-      <obj_property name="ObjectShortName">freq_i[27:0]</obj_property>
+      <obj_property name="ElementShortName">freq_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">freq_i[31:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/reg0" type="array">
@@ -47,7 +47,6 @@
    <wvobject fp_name="/PhaseCalculation_tb/mem_bus" type="array">
       <obj_property name="ElementShortName">mem_bus</obj_property>
       <obj_property name="ObjectShortName">mem_bus</obj_property>
-      <obj_property name="isExpanded"></obj_property>
       <wvobject fp_name="/PhaseCalculation_tb/mem_bus.m" type="array">
          <obj_property name="ElementShortName">.m</obj_property>
          <obj_property name="ObjectShortName">.m</obj_property>
@@ -55,7 +54,14 @@
       <wvobject fp_name="/PhaseCalculation_tb/mem_bus.s" type="array">
          <obj_property name="ElementShortName">.s</obj_property>
          <obj_property name="ObjectShortName">.s</obj_property>
-         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.m" type="array">
+         <obj_property name="ElementShortName">.m</obj_property>
+         <obj_property name="ObjectShortName">.m</obj_property>
+      </wvobject>
+      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.s" type="array">
+         <obj_property name="ElementShortName">.s</obj_property>
+         <obj_property name="ObjectShortName">.s</obj_property>
       </wvobject>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/phase_o" type="array">
@@ -154,5 +160,9 @@
    <wvobject fp_name="/PhaseCalculation_tb/ddsphaseValid" type="logic">
       <obj_property name="ElementShortName">ddsphaseValid</obj_property>
       <obj_property name="ObjectShortName">ddsphaseValid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseCalculation_tb/uut/cicValid" type="logic">
+      <obj_property name="ElementShortName">cicValid</obj_property>
+      <obj_property name="ObjectShortName">cicValid</obj_property>
    </wvobject>
 </wave_config>

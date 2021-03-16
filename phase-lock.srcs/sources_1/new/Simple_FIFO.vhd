@@ -6,13 +6,16 @@ use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
 entity Simple_FIFO is
+    generic(
+        DATA_WIDTH  :   natural :=  16
+    );
     port (
         wr_clk  :   in  std_logic;
         rd_clk  :   in  std_logic;
         aresetn :   in  std_logic;
         
-        data_i  :   in  std_logic_vector;
-        data_o  :   out std_logic_vector
+        data_i  :   in  std_logic_vector(31 downto 0);
+        data_o  :   out std_logic_vector(DATA_WIDTH-1 downto 0)
     );
 end Simple_FIFO;
 
@@ -21,7 +24,7 @@ architecture Behavioral of Simple_FIFO is
 constant BUF_SIZE   :   integer :=  4;
 constant BUF_LENGTH :   integer :=  2;
 
-subtype t_adc_data is std_logic_vector(data_o'length-1 downto 0);
+subtype t_adc_data is std_logic_vector(DATA_WIDTH-1 downto 0);
 type t_adc_fifo is array(integer range 0 to BUF_SIZE-1) of t_adc_data;
 
 signal fifo_data        :   t_adc_fifo  :=  (others => (others => '0'));

@@ -230,8 +230,6 @@ phase_o <= signed(phase);
 --
 -- Save data
 --
-memSwitch <= reg0(3 downto 0);
-
 memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
                 phase;
 memValid_i <=   '1' when memSwitch = X"F" else

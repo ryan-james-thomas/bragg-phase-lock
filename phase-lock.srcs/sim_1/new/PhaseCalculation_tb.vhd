@@ -155,12 +155,18 @@ begin
     wait until rising_edge(clk);
     regValid_i <= '0';
     wait for 60 us;
+--    wait until rising_edge(clk);
+--    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
+--    ddsphaseValid <= '1';
+--    wait until rising_edge(clk);
+--    ddsphaseValid <= '0';
+--    wait until rising_edge(clk);
     wait until rising_edge(clk);
-    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
-    ddsphaseValid <= '1';
+    reg0(7 downto 0) <= std_logic_vector(to_unsigned(10,8));
     wait until rising_edge(clk);
-    ddsphaseValid <= '0';
+    regValid_i <= '1';
     wait until rising_edge(clk);
+    regValid_i <= '0';
     wait;
 end process;
 
