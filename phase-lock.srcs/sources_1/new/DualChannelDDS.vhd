@@ -52,7 +52,7 @@ signal dds2_tvalid      :   std_logic;
 
 begin
 
-dds1_phase_slv <= std_logic_vector(pow1) & std_logic_vector(ftw1);
+dds1_phase_slv <= std_logic_vector(resize(pow1,32)) & std_logic_vector(resize(ftw1,32));
 DDS1: FreqPhaseStreamDDS
 port map(
     aclk                =>  clk,
@@ -63,7 +63,7 @@ port map(
     m_axis_data_tdata   =>  dds1_tdata
 );
 
-dds2_phase_slv <= std_logic_vector(ftw2);
+dds2_phase_slv <= std_logic_vector(resize(ftw2,32));
 DDS2: FreqStreamDDS
 port map(
     aclk                =>  clk,

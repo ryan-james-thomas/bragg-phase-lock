@@ -13,11 +13,8 @@ entity PhaseCalculation is
         adcData_i       :   in  t_adc;              --ADC data synchronous with clk
         
         freq_i          :   in  t_dds_phase;        --Frequency difference used for mixing DDS             
-        reg0            :   in  t_param_reg;        --Bits [31,28]: memSwitch, [3,0]: log2(cicRate)
+        reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
-        
-        mem_bus_m       :   in  t_mem_bus_master;   --Master memory bus
-        mem_bus_s       :   out t_mem_bus_slave;    --Slave memory bus
         
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
@@ -117,19 +114,12 @@ signal tdataPhase   :   std_logic_vector(31 downto 0);
 signal phase        :   std_logic_vector(15 downto 0);
 signal validPhase   :   std_logic;
 
---
--- Memory signals
---
-signal memSwitch    :   std_logic_vector(3 downto 0);
-signal memData_i    :   std_logic_vector(15 downto 0);
-signal memValid_i   :   std_logic;
 
 begin
 
 --
 -- Parse parameters
 --
-memSwitch <= reg0(31 downto 28);
 cicRate <= unsigned(reg0(7 downto 0));
 
 --
@@ -225,24 +215,6 @@ PORT MAP (
 );
 
 valid_o <= validPhase;
-phase_o <= signed(phase);
-
---
--- Save data
---
-memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
-                phase;
-memValid_i <=   '1' when memSwitch = X"F" else
-                validPhase;                
-
-SaveData: BlockMemHandler
-port map(
-    clk         =>  clk,
-    aresetn     =>  aresetn,
-    data_i      =>  memData_i,
-    valid_i     =>  memValid_i,
-    bus_m       =>  mem_bus_m,
-    bus_s       =>  mem_bus_s
-);
+phase_o <= resize(signed(phase),phase_o'length);
 
 end Behavioral;

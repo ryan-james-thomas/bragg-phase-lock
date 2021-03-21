@@ -3,61 +3,85 @@ clear;
 Fs = 125e6;
 dt = 1/Fs;
 
-%% Input signal
-fin = 250e3*1;
-T = 10e-3;
+T = 1e-3;
 t = (0:dt:T)';
-phin = (2*pi*randn-pi)/2 + cumsum(1e-3*randn(size(t)));
-x = sin(2*pi*fin*t + phin);
+N = numel(t);
+f0 = 250e3;
 
-%% Mixed signal
-dds = [cos(2*pi*fin*t) sin(2*pi*fin*t)];
-m = [x.*dds(:,1) x.*dds(:,2)];
+%% Input signals
+ph = zeros(N,2);
+phc = zeros(N,2);
+x = zeros(N,1);
+dds = zeros(N,2);
+m = zeros(N,2);
+ph(1,:) = pi*(2*rand(1,2)-1)*0;
+sigfunc = @(t,ph) (1+0.0*randn)*sin(2*pi*f0*t+4*(ph(2)-ph(1)));
+x(1) = sigfunc(t(1),ph(1,:));
+ddsfunc = @(t) [cos(2*pi*f0*t) sin(2*pi*f0*t)];
+dds(1,:) = ddsfunc(t(1));
 
-%% Quick average of signal
-% Navg = 8;
-% qavg = zeros(floor(size(m,1)/Navg),2);
-% tavg = zeros(size(qavg,1),1);
-% for nn = 1:size(qavg,1)
-%     idx = ((nn-1)*Navg+1):(nn*Navg);
-%     qavg(nn,:) = mean(m(idx,:),1);
-%     tavg(nn) = mean(t(idx));
-% end
+R = 2^8;
+dtavg = dt*R;
+tavg = [];
+xavg = [];
 
-%% CIC filter
-[qavg,tavg] = cicfilter(t,m,2^8,3);
-dtnew = tavg(2)-tavg(1);
+u = 0;
+r = (1+tanh((t-t(round(N/2)))/20e-6))/2*pi/2;
+% r = (t > t(round(N/2)))*pi/2;
+Kp = 0.125;
+Ki = 1/8*2*pi*3e3*dt*R;
+phdev = [0,0];
 
-%% LP filter
-% h = 2*pi*20e3*dtnew;
-% f = zeros(size(qavg));
-% for nn = 2:size(qavg,1)
-%     f(nn,:) = h*(qavg(nn-1,:) - f(nn-1,:))+f(nn-1,:);
-% end
-f = qavg;
+for nn = 2:N
+    phc(nn,2) = u(end);
+%     phdev = sin(2*pi*100*t(nn)).*[-0.5,0.5];
+    phdev = phdev + 1/sqrt(Fs)*randn(1,2);
+    ph(nn,:) = phc(nn,:) + phdev;
+    
+    x(nn) = sigfunc(t(nn),ph(nn,:));
+    dds(nn,:) = ddsfunc(t(nn));
+    
+    m(nn,:) = [x(nn).*dds(nn,1) x(nn).*dds(nn,2)];
+    
+    
+    if mod(nn,R) == 0
+        [xavg,tavg] = cicfilter(t(1:nn),m(1:nn,:),R,3);
+        phnew = atan2(xavg(:,1),xavg(:,2));
+        dph = [0;diff(phnew)];
+        for mm = 1:numel(dph)
+            if dph(mm) > 1.0*pi
+                dph(mm) = dph(mm) - 2*pi;
+            elseif dph(mm) < -1.0*pi
+                dph(mm) = dph(mm) + 2*pi;
+            end
+        end
+        phw = cumsum(dph);
+        e = r(nn) - phw;
+        if numel(e) == 1
+            u(1) = 0;
+        else
+            u(numel(e)) = u(numel(e)-1) + 0.25*e(end);
+        end
+%         if numel(e) == 1
+%             u(end+1) = u(end) + Kp*e(end) + Ki*e(end);
+%         else
+%             u(end+1) = u(end) + Kp*(e(end)-e(end-1)) + Ki*(e(end)+e(end-1));
+%         end
 
-%% Phase
-ph = atan2(f(:,1),f(:,2));
-% h = 2*pi*50e3*Navg*dt;
-% phf = zeros(size(qavg));
-% for nn = 2:size(qavg,1)
-%     phf(nn,:) = h*(ph(nn-1,:) - phf(nn-1,:))+phf(nn-1,:);
-% end
+%         u(numel(e)) = 0.25*e(end);
 
-%% Plot
+%         ph(nn,2) = ph(nn,2) + u(end);
+    end
+    
+end
+
+%%
 figure(1);clf;
-plot(t,phin);
-hold on
-plot(tavg,ph,'.-');
-% plot(tavg,phf);
+plot(t,4*diff(ph,1,2),'.-');
+hold on;
+plot(tavg,phw,'.-');
+plot(t,phc(:,2),'.-');
 hold off;
+grid on;
 
-window = ones(round(numel(phin)/4),1);
-[P0,f0] = pwelch(phin,window,[],[],1/dt);
-window = ones(round(numel(ph)/4),1);
-[P,f] = pwelch(ph,window,[],[],1/dtnew);
-figure(2);clf;
-loglog(f0,P0);
-hold on
-loglog(f,P);
 

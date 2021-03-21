@@ -12,13 +12,14 @@ package CustomDataTypes is
 -- Constants
 --
 constant PARAM_WIDTH        :   natural :=  32;
-constant PHASE_WIDTH        :   natural :=  32;
+constant PHASE_WIDTH        :   natural :=  27;
+constant CORDIC_WIDTH       :   natural :=  16;
 
 subtype t_param_reg is std_logic_vector(PARAM_WIDTH-1 downto 0);
 subtype t_adc_combined is std_logic_vector(31 downto 0);
 subtype t_adc is signed(13 downto 0);
 subtype t_dds_phase is unsigned(PHASE_WIDTH-1 downto 0);
-subtype t_phase is signed(15 downto 0);
+subtype t_phase is signed(23 downto 0);
 
 --type t_param_reg_array is array(natural range <>) of t_param_reg;
 

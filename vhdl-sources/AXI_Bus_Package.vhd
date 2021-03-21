@@ -91,6 +91,13 @@ procedure readOnly(
     signal bus_o    :   out     t_axi_bus_slave;
     signal state    :   inout   t_status;
     signal param    :   in      unsigned);
+
+procedure memRW(
+    signal axi_m    :   in      t_axi_bus_master;
+    signal axi_s    :   out     t_axis_bus_slave;
+    signal state    :   inout   t_status;
+    signal mem_m    :   in      t_mem_bus_master;
+    signal mem_s    :   out     t_mem_bus_slave);
 	
 end AXI_Bus_Package;
 
@@ -116,7 +123,7 @@ begin
         RESULT(XARG'left downto 0) := XARG;
     end if;
     return RESULT;
-end RESIZE;
+end resize;
 
 procedure rw(
     signal bus_i    :   in      t_axi_bus_master;
@@ -192,5 +199,32 @@ begin
         bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
 end readOnly;
+
+procedure memRW(
+    signal axi_m    :   in      t_axi_bus_master;
+    signal axi_s    :   out     t_axis_bus_slave;
+    signal state    :   inout   t_status;
+    signal mem_m    :   inout   t_mem_bus_master;
+    signal mem_s    :   in      t_mem_bus_slave) is
+begin
+    if axi_m.valid(1) = '0' then
+        axi_s.resp <= "11";
+        state <= finishing;
+        mem_m.trig <= '0';
+        mem_m.status <= idle;
+    elsif mem_s.valid = '1' then
+        axi_s.data <= resize(mem_s.data,axi_s.data'length);
+        state <= finishing;
+        axi_s.resp <= "01";
+        mem_m.status <= idle;
+        mem_m.trig <= '0';
+    elsif mem_m.status = idle then
+        mem_m.addr <= axi_m.addr(MEM_ADDR_WIDTH+1 downto 2);
+        mem_m.status <= waiting;
+        mem_m.trig <= '1';
+     else
+        mem_m.trig <= '0';
+    end if;
+end memRW;
 
 end AXI_Bus_Package;

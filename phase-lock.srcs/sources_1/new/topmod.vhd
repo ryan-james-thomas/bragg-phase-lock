@@ -55,14 +55,40 @@ component PhaseCalculation is
         adcData_i       :   in  t_adc;              --ADC data synchronous with clk
         
         freq_i          :   in  t_dds_phase;        --Frequency difference used for mixing DDS             
-        reg0            :   in  t_param_reg;        --Bits [31,28]: memSwitch, [3,0]: log2(cicRate)
+        reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
-        
-        mem_bus_m       :   in  t_mem_bus_master;   --Master memory bus
-        mem_bus_s       :   out t_mem_bus_slave;    --Slave memory bus
         
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
+    );
+end component;
+
+component BlockMemHandler is
+    port(
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+        
+        data_i      :   in  std_logic_vector;
+        valid_i     :   in  std_logic;
+        
+        bus_m       :   in  t_mem_bus_master;
+        bus_s       :   out t_mem_bus_slave
+    );
+end component;
+
+component PhaseControl is
+    port map(
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+
+        reg0        :   in  t_param_reg;
+
+        phase_i     :   in  t_phase;
+        valid_i     :   in  std_logic;
+        phase_c     :   in  t_phase;
+
+        dds_phase_o :   out t_dds_phase;
+        valid_o     :   out std_logic
     );
 end component;
 
@@ -82,30 +108,43 @@ signal f0, df,df8   :   t_dds_phase     :=  (others => '0');
 signal pow          :   t_dds_phase     :=  (others => '0');
 signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
 
-
 --
 -- Phase calculation signals
 --
 signal adc          :   t_adc       :=  (others => '0');
 signal phase        :   t_phase     :=  (others => '0');
 signal phaseValid   :   std_logic   :=  '0';
-signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
 signal regPhase     :   t_param_reg :=  (others => '0');
 signal regPhaseValid:   std_logic   :=  '0';
+
+--
+-- Phase control signals
+--
+signal regPhaseControl  :   t_param_reg;
+signal phaseControlSig  :   t_phase;
+signal powControl       :   t_dds_phase;
+signal powControlValid  :   std_logic;
+
+--
+-- Block memory signals
+--
+signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
+signal memSwitch    :   std_logic_vector(3 downto 0);
+signal memData_i    :   std_logic_vector(15 downto 0);
+signal memValid_i   :   std_logic;
 
 begin
 
 --
 -- DDS output signals
 --
-
 ftw1 <= f0 + df;
 ftw2 <= f0 - df;
 DDS_2Channel: DualChannelDDS
 port map(
     clk             =>  clk,
     aresetn         =>  aresetn,
-    pow1            =>  pow,
+    pow1            =>  powControl,
     ftw1            =>  ftw1,
     ftw2            =>  ftw2,
     m_axis_tvalid   =>  m_axis_tvalid,
@@ -132,6 +171,41 @@ port map(
     valid_o     =>  phaseValid
 );
 
+--
+-- Phase control
+--
+MainPhaseControl: PhaseControl
+port map(
+    clk         =>  clk,
+    aresetn     =>  aresetn,
+    reg0        =>  regPhaseControl,
+    phase_i     =>  phase,
+    valid_i     =>  phaseValid,
+    phase_c     =>  phaseControlSig,
+    dds_phase_o =>  powControl,
+    valid_o     =>  phaseControlValid
+);
+
+
+--
+-- Save data
+--
+mem_bus.m.reset <= triggers(1); --This serves as a "start" trigger, and the memory will save data up to its size
+memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
+                std_logic_vector(resize(phase,memData_i'length));
+memValid_i <=   '1' when memSwitch = X"F" else
+                validPhase;                
+
+SaveData: BlockMemHandler
+port map(
+    clk         =>  clk,
+    aresetn     =>  aresetn,
+    data_i      =>  memData_i,
+    valid_i     =>  memValid_i,
+    bus_m       =>  mem_bus.m,
+    bus_s       =>  mem_bus.s
+);
+
 
 --
 -- Parse AXI data
@@ -149,8 +223,10 @@ begin
         triggers <= (others => '0');
         f0 <= to_unsigned(37580964,f0'length);  --35 MHz
         df <= to_unsigned(1073742,df'length);   --1 MHz
-        pow <= to_unsigned(0,pow'length);
+        phaseControlSig <= to_unsigned(0,phaseControlSig'length);
         regPhase <= X"00000008";                --CIC filter decimation rate of 2^8 = 256
+        regPhaseControl <= (others => '0');
+        phaseControlSig <= (others => '0');
         
         mem_bus.m.addr <= (others => '0');
         mem_bus.m.trig <= '0';
@@ -171,12 +247,12 @@ begin
                     --
                     when X"00" =>
                     ParamCase: case(bus_m.addr(23 downto 0)) is
-                        
                         when X"000000" => rw(bus_m,bus_s,comState,triggers);
                         when X"000004" => rw(bus_m,bus_s,comState,f0);
                         when X"000008" => rw(bus_m,bus_s,comState,df);
-                        when X"00000C" => rw(bus_m,bus_s,comState,pow);
+                        when X"00000C" => rw(bus_m,bus_s,comState,phaseControlSig);
                         when X"000010" => rw(bus_m,bus_s,comState,regPhase);
+                        when X"000014" => rw(bus_m,bus_s,comState,regPhaseControl);
                         
                         when others => 
                             comState <= finishing;
