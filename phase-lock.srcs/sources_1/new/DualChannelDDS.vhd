@@ -75,6 +75,6 @@ port map(
 );
 
 m_axis_tvalid <= dds1_tvalid and dds2_tvalid;
-m_axis_tdata <= dds1_tdata & dds2_tdata;
+m_axis_tdata <= std_logic_vector(shift_left(signed(dds1_tdata),4)) & std_logic_vector(shift_left(signed(dds2_tdata),4));
 
 end Behavioral;

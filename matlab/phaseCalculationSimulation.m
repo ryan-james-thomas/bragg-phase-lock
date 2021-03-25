@@ -1,4 +1,4 @@
-clear;
+% clear;
 
 Fs = 125e6;
 dt = 1/Fs;
@@ -8,14 +8,14 @@ fin = 250e3*1;
 T = 10e-3;
 t = (0:dt:T)';
 phin = (2*pi*randn-pi) + cumsum(10*pi*(Fs)^-0.5*randn(size(t)));
-x = sin(2*pi*fin*t + phin);
+x = (1+0.1*randn(size(t))).*sin(2*pi*fin*t + phin)+1;
 
 %% Mixed signal
 dds = [cos(2*pi*fin*t) sin(2*pi*fin*t)];
 m = [x.*dds(:,1) x.*dds(:,2)];
 
 %% CIC filter
-[qavg,tavg] = cicfilter(t,m,2^8,3);
+[qavg,tavg] = cicfilter(t,m,2^10,3);
 dtnew = tavg(2)-tavg(1);
 
 %% LP filter
@@ -48,7 +48,7 @@ phw = cumsum(dph);
 phin = phin - phin(1);
 
 %% Plot
-figure(1);clf;
+figure(2);clf;
 plot(t,phin);
 hold on
 plot(tavg,phw,'.-');

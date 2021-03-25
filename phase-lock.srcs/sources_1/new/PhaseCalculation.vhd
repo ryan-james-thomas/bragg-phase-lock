@@ -91,6 +91,7 @@ signal dds_combined     :   std_logic_vector(31 downto 0);
 signal dds_sin          :   std_logic_vector(13 downto 0);
 signal dds_cos          :   std_logic_vector(13 downto 0);
 signal I, Q             :   std_logic_vector(27 downto 0);
+signal scaleFactor      :   unsigned(3 downto 0);
 
 --
 -- Downsampling/fast averaging signals
@@ -121,6 +122,7 @@ begin
 -- Parse parameters
 --
 cicRate <= unsigned(reg0(7 downto 0));
+scaleFactor <= unsigned(reg0(11 downto 8));
 
 --
 -- Generate mixing signals
@@ -139,8 +141,8 @@ port map(
 --
 -- Multiply the input signal with the I and Q mixing signals
 --
-dds_cos <= std_logic_vector(resize(signed(dds_combined(9 downto 0)),dds_cos'length));
-dds_sin <= std_logic_vector(resize(signed(dds_combined(29 downto 16)),dds_sin'length));
+dds_cos <= std_logic_vector(resize(signed(dds_combined(15 downto 0)),dds_cos'length));
+dds_sin <= std_logic_vector(resize(signed(dds_combined(31 downto 16)),dds_sin'length));
 
 I_Mixer: MultMixer
 port map(
@@ -163,8 +165,8 @@ port map(
 --
 cicConfig_i(11 downto 0) <= std_logic_vector(shift_left(to_unsigned(1,12),to_integer(cicRate)));
 cicConfig_i(15 downto 12) <= (others => '0');
-cicI_i <= std_logic_vector(resize(signed(I),cicI_i'length));
-cicQ_i <= std_logic_vector(resize(signed(Q),cicQ_i'length));
+cicI_i <= std_logic_vector(resize(shift_right(signed(I),to_integer(scaleFactor)),cicI_i'length));
+cicQ_i <= std_logic_vector(resize(shift_right(signed(Q),to_integer(scaleFactor)),cicQ_i'length));
 
 I_decimate: CIC_Decimate
 port map(

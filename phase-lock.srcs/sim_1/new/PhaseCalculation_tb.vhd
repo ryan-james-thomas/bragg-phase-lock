@@ -19,11 +19,8 @@ component PhaseCalculation is
         adcData_i       :   in  t_adc;              --ADC data synchronous with clk
         
         freq_i          :   in  t_dds_phase;        --Frequency difference used for mixing DDS             
-        reg0            :   in  t_param_reg;        --Bits [31,28]: memSwitch, [3,0]: log2(cicRate)
+        reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
-        
-        mem_bus_m       :   in  t_mem_bus_master;   --Master memory bus
-        mem_bus_s       :   out t_mem_bus_slave;    --Slave memory bus
         
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
@@ -64,7 +61,7 @@ signal freq_i       :   t_dds_phase;
 signal reg0         :   t_param_reg;
 signal regValid_i   :   std_logic;
 
-signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
+--signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
 
 signal phase_o      :   t_phase;
 signal valid_o      :   std_logic;
@@ -96,8 +93,6 @@ port map(
     freq_i      =>  freq_i,
     reg0        =>  reg0,
     regValid_i  =>  regValid_i,
-    mem_bus_m   =>  mem_bus.m,
-    mem_bus_s   =>  mem_bus.s,
     phase_o     =>  phase_o,
     valid_o     =>  valid_o
 );
@@ -126,7 +121,7 @@ PORT MAP (
     m_axis_data_tvalid => ddsValid_o,
     m_axis_data_tdata => dds_o
 );
-adcData_i <= shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),4);
+adcData_i <= shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(1024,adcData_i'length);
 
 --test_data: process(clk,aresetn) is
 --begin
@@ -141,8 +136,8 @@ adcData_i <= shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),4);
 main_proc: process
 begin
     aresetn <= '0';
-    freq_i <= to_unsigned(536871,freq_i'length);
-    reg0 <= X"00" & X"0000" & X"08";
+    freq_i <= to_unsigned(1073742,freq_i'length);
+    reg0 <= X"00" & X"0000" & X"0a";
     regValid_i <= '0';
 --    adcData_i <= to_signed(10,adcData_i'length);
     ddsphase <= std_logic_vector(to_signed(0,ddsphase'length));
@@ -155,18 +150,21 @@ begin
     wait until rising_edge(clk);
     regValid_i <= '0';
     wait for 60 us;
---    wait until rising_edge(clk);
---    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
---    ddsphaseValid <= '1';
---    wait until rising_edge(clk);
---    ddsphaseValid <= '0';
---    wait until rising_edge(clk);
     wait until rising_edge(clk);
-    reg0(7 downto 0) <= std_logic_vector(to_unsigned(10,8));
+    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
+    ddsphaseValid <= '1';
     wait until rising_edge(clk);
-    regValid_i <= '1';
+    ddsphaseValid <= '0';
     wait until rising_edge(clk);
-    regValid_i <= '0';
+
+--    wait until rising_edge(clk);
+--    reg0(7 downto 0) <= std_logic_vector(to_unsigned(10,8));
+--    wait until rising_edge(clk);
+--    regValid_i <= '1';
+--    wait until rising_edge(clk);
+--    regValid_i <= '0';
+    
+    
     wait;
 end process;
 

@@ -1,0 +1,5 @@
+*.bin
+*.asv
+__pycache__/
+*.dat
+

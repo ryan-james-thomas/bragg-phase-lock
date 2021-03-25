@@ -77,7 +77,7 @@ component BlockMemHandler is
 end component;
 
 component PhaseControl is
-    port map(
+    port(
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
 
@@ -89,6 +89,19 @@ component PhaseControl is
 
         dds_phase_o :   out t_dds_phase;
         valid_o     :   out std_logic
+    );
+end component;
+
+component FIFOHandler is
+    port(
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+        
+        data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
+        valid_i     :   in  std_logic;
+        
+        bus_m       :   in  t_fifo_bus_master;
+        bus_s       :   out t_fifo_bus_slave
     );
 end component;
 
@@ -128,10 +141,20 @@ signal powControlValid  :   std_logic;
 --
 -- Block memory signals
 --
+signal topReg       :   t_param_reg;
 signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
 signal memSwitch    :   std_logic_vector(3 downto 0);
 signal memData_i    :   std_logic_vector(15 downto 0);
 signal memValid_i   :   std_logic;
+
+--
+-- FIFO signals
+--
+signal fifoData     :   std_logic_vector(FIFO_WIDTH-1 downto 0);
+signal fifoValid    :   std_logic;
+signal fifo_bus     :   t_fifo_bus  :=  INIT_FIFO_BUS;
+signal fifoReg      :   t_param_reg;
+signal enableFIFO   :   std_logic;
 
 begin
 
@@ -155,7 +178,7 @@ port map(
 -- Phase calculation
 --
 adc <= signed(adcData_i(adc'length-1 downto 0));
-df8 <= shift_left(df,3);
+df8 <= shift_left(df,to_integer(unsigned(topReg(7 downto 4))));
 regPhaseValid <= triggers(0);
 PhaseCalc: PhaseCalculation
 port map(
@@ -165,8 +188,6 @@ port map(
     freq_i      =>  df8,
     reg0        =>  regPhase,
     regValid_i  =>  regPhaseValid,
-    mem_bus_m   =>  mem_bus.m,
-    mem_bus_s   =>  mem_bus.s,
     phase_o     =>  phase,
     valid_o     =>  phaseValid
 );
@@ -183,18 +204,19 @@ port map(
     valid_i     =>  phaseValid,
     phase_c     =>  phaseControlSig,
     dds_phase_o =>  powControl,
-    valid_o     =>  phaseControlValid
+    valid_o     =>  powControlValid
 );
 
 
 --
 -- Save data
 --
+memSwitch <= topReg(3 downto 0);
 mem_bus.m.reset <= triggers(1); --This serves as a "start" trigger, and the memory will save data up to its size
 memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
                 std_logic_vector(resize(phase,memData_i'length));
 memValid_i <=   '1' when memSwitch = X"F" else
-                validPhase;                
+                phaseValid;      
 
 SaveData: BlockMemHandler
 port map(
@@ -204,6 +226,23 @@ port map(
     valid_i     =>  memValid_i,
     bus_m       =>  mem_bus.m,
     bus_s       =>  mem_bus.s
+);
+               
+--
+-- FIFO buffering for long data sets
+--
+enableFIFO <= fifoReg(0);
+fifo_bus.m.reset <= triggers(2);
+fifoValid <= phaseValid and enableFIFO;
+fifoData <= std_logic_vector(resize(phase,FIFO_WIDTH));
+SaveDataFIFO: FIFOHandler
+port map(
+    clk         =>  clk,
+    aresetn     =>  aresetn,
+    data_i      =>  fifoData,
+    valid_i     =>  fifoValid,
+    bus_m       =>  fifo_bus.m,
+    bus_s       =>  fifo_bus.s
 );
 
 
@@ -223,14 +262,18 @@ begin
         triggers <= (others => '0');
         f0 <= to_unsigned(37580964,f0'length);  --35 MHz
         df <= to_unsigned(1073742,df'length);   --1 MHz
-        phaseControlSig <= to_unsigned(0,phaseControlSig'length);
-        regPhase <= X"00000008";                --CIC filter decimation rate of 2^8 = 256
-        regPhaseControl <= (others => '0');
+        phaseControlSig <= to_signed(0,phaseControlSig'length);
+        regPhase <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
+        regPhaseControl <= X"000000" & X"08";
         phaseControlSig <= (others => '0');
+        topReg <= (others => '0');
+        fifoReg <= (others => '0');
         
         mem_bus.m.addr <= (others => '0');
         mem_bus.m.trig <= '0';
         mem_bus.m.status <= idle;
+        
+        fifo_bus.m.status <= idle;
     elsif rising_edge(clk) then
         FSM: case(comState) is
             when idle =>
@@ -248,11 +291,14 @@ begin
                     when X"00" =>
                     ParamCase: case(bus_m.addr(23 downto 0)) is
                         when X"000000" => rw(bus_m,bus_s,comState,triggers);
-                        when X"000004" => rw(bus_m,bus_s,comState,f0);
-                        when X"000008" => rw(bus_m,bus_s,comState,df);
-                        when X"00000C" => rw(bus_m,bus_s,comState,phaseControlSig);
-                        when X"000010" => rw(bus_m,bus_s,comState,regPhase);
-                        when X"000014" => rw(bus_m,bus_s,comState,regPhaseControl);
+                        when X"000004" => rw(bus_m,bus_s,comState,topReg);
+                        when X"000008" => rw(bus_m,bus_s,comState,f0);
+                        when X"00000C" => rw(bus_m,bus_s,comState,df);
+                        when X"000010" => rw(bus_m,bus_s,comState,phaseControlSig);
+                        when X"000014" => rw(bus_m,bus_s,comState,regPhase);
+                        when X"000018" => rw(bus_m,bus_s,comState,regPhaseControl);
+                        when X"00001C" => rw(bus_m,bus_s,comState,fifoReg);
+                        when X"000020" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);
                         
                         when others => 
                             comState <= finishing;
@@ -265,6 +311,7 @@ begin
                     when X"01" =>
                         ParamCaseReadOnly: case(bus_m.addr(23 downto 0)) is
                             when X"000000" => readOnly(bus_m,bus_s,comState,mem_bus.s.last);
+--                            when X"000004" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";
@@ -273,25 +320,8 @@ begin
                     --
                     -- Read phase data
                     --
-                    when X"02" =>
-                        if bus_m.valid(1) = '0' then
-                            bus_s.resp <= "11";
-                            comState <= finishing;
-                            mem_bus.m.trig <= '0';
-                            mem_bus.m.status <= idle;
-                        elsif mem_bus.s.valid = '1' then
-                            bus_s.data <= X"0000" & mem_bus.s.data;
-                            comState <= finishing;
-                            bus_s.resp <= "01";
-                            mem_bus.m.status <= idle;
-                            mem_bus.m.trig <= '0';
-                        elsif mem_bus.m.status = idle then
-                            mem_bus.m.addr <= bus_m.addr(MEM_ADDR_WIDTH+1 downto 2);
-                            mem_bus.m.status <= waiting;
-                            mem_bus.m.trig <= '1';
-                         else
-                            mem_bus.m.trig <= '0';
-                        end if;       
+                    when X"02" => memRead(bus_m,bus_s,comState,mem_bus.m,mem_bus.s);
+--                    when X"03" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);   
                         
                     when others => 
                         comState <= finishing;

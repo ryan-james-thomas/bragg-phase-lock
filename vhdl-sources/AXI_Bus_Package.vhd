@@ -92,13 +92,21 @@ procedure readOnly(
     signal state    :   inout   t_status;
     signal param    :   in      unsigned);
 
-procedure memRW(
+procedure memRead(
     signal axi_m    :   in      t_axi_bus_master;
-    signal axi_s    :   out     t_axis_bus_slave;
+    signal axi_s    :   out     t_axi_bus_slave;
     signal state    :   inout   t_status;
-    signal mem_m    :   in      t_mem_bus_master;
-    signal mem_s    :   out     t_mem_bus_slave);
-	
+    signal mem_m    :   inout   t_mem_bus_master;
+    signal mem_s    :   in      t_mem_bus_slave);
+
+procedure fifoRead(
+    signal axi_m    :   in      t_axi_bus_master;
+    signal axi_s    :   out     t_axi_bus_slave;
+    signal state    :   inout   t_status;
+    signal fifo_m   :   inout   t_fifo_bus_master;
+    signal fifo_s   :   in      t_fifo_bus_slave);
+    
+    
 end AXI_Bus_Package;
 
 --------------------------------------------------------------------------------------------------
@@ -200,9 +208,9 @@ begin
     end if;
 end readOnly;
 
-procedure memRW(
+procedure memRead(
     signal axi_m    :   in      t_axi_bus_master;
-    signal axi_s    :   out     t_axis_bus_slave;
+    signal axi_s    :   out     t_axi_bus_slave;
     signal state    :   inout   t_status;
     signal mem_m    :   inout   t_mem_bus_master;
     signal mem_s    :   in      t_mem_bus_slave) is
@@ -225,6 +233,46 @@ begin
      else
         mem_m.trig <= '0';
     end if;
-end memRW;
+end memRead;
+
+procedure fifoRead(
+    signal axi_m    :   in      t_axi_bus_master;
+    signal axi_s    :   out     t_axi_bus_slave;
+    signal state    :   inout   t_status;
+    signal fifo_m   :   inout   t_fifo_bus_master;
+    signal fifo_s   :   in      t_fifo_bus_slave) is
+begin
+    if axi_m.valid(1) = '0' then
+        axi_s.resp <= "11";
+        state <= finishing;
+        fifo_m.rd_en <= '0';
+        fifo_m.status <= idle;
+        fifo_m.count <= (others => '0');
+    elsif fifo_s.valid = '1' then
+        axi_s.data <= resize(fifo_s.data,axi_s.data'length);
+        state <= finishing;
+        axi_s.resp <= "01";
+        fifo_m.status <= idle;
+        fifo_m.count <= (others => '0');
+        fifo_m.rd_en <= '0';
+    elsif fifo_m.status = idle then
+        if fifo_s.empty = '0' then
+            fifo_m.status <= waiting;
+            fifo_m.rd_en <= '1';
+            fifo_m.count <= (others => '0');
+        elsif fifo_m.count < FIFO_TIMEOUT then
+            fifo_m.count <= fifo_m.count + 1;
+        else
+            fifo_m.count <= (others => '0');
+            axi_s.resp <= "11";
+            state <= finishing;
+            fifo_m.rd_en <= '0';
+            fifo_m.status <= idle;
+        end if; 
+     else
+        fifo_m.rd_en <= '0';
+        fifo_m.count <= (others => '0');
+    end if;
+end fifoRead;
 
 end AXI_Bus_Package;

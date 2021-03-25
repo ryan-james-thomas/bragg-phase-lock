@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="PhaseControl_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="PhaseControl_tb" />
+            <top_module name="axi_bus_package" />
+            <top_module name="customdatatypes" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="3890001fs"></ZoomEndTime>
+      <Cursor1Time time="4797000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="533"></NameColumnWidth>
+      <ValueColumnWidth column_width="227"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="25" />
+   <wvobject fp_name="/PhaseControl_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/aresetn" type="logic">
+      <obj_property name="ElementShortName">aresetn</obj_property>
+      <obj_property name="ObjectShortName">aresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/reg0" type="array">
+      <obj_property name="ElementShortName">reg0[31:0]</obj_property>
+      <obj_property name="ObjectShortName">reg0[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/phase_i" type="array">
+      <obj_property name="ElementShortName">phase_i[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phase_i[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/phase_c" type="array">
+      <obj_property name="ElementShortName">phase_c[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phase_c[23:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/state" type="other">
+      <obj_property name="ElementShortName">state</obj_property>
+      <obj_property name="ObjectShortName">state</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/valid_i" type="logic">
+      <obj_property name="ElementShortName">valid_i</obj_property>
+      <obj_property name="ObjectShortName">valid_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/valid_o" type="logic">
+      <obj_property name="ElementShortName">valid_o</obj_property>
+      <obj_property name="ObjectShortName">valid_o</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/dds_phase_o" type="array">
+      <obj_property name="ElementShortName">dds_phase_o[26:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_phase_o[26:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/CLK_T" type="other">
+      <obj_property name="ElementShortName">CLK_T</obj_property>
+      <obj_property name="ObjectShortName">CLK_T</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/polarity" type="logic">
+      <obj_property name="ElementShortName">polarity</obj_property>
+      <obj_property name="ObjectShortName">polarity</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/enable" type="logic">
+      <obj_property name="ElementShortName">enable</obj_property>
+      <obj_property name="ObjectShortName">enable</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/divPower" type="array">
+      <obj_property name="ElementShortName">divPower[3:0]</obj_property>
+      <obj_property name="ObjectShortName">divPower[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/phaseNew" type="array">
+      <obj_property name="ElementShortName">phaseNew[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phaseNew[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/phaseOld" type="array">
+      <obj_property name="ElementShortName">phaseOld[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phaseOld[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/phaseDiff" type="array">
+      <obj_property name="ElementShortName">phaseDiff[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phaseDiff[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/phaseSum" type="array">
+      <obj_property name="ElementShortName">phaseSum[23:0]</obj_property>
+      <obj_property name="ObjectShortName">phaseSum[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/err" type="array">
+      <obj_property name="ElementShortName">err[23:0]</obj_property>
+      <obj_property name="ObjectShortName">err[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/act" type="array">
+      <obj_property name="ElementShortName">act[23:0]</obj_property>
+      <obj_property name="ObjectShortName">act[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/actScale" type="array">
+      <obj_property name="ElementShortName">actScale[15:0]</obj_property>
+      <obj_property name="ObjectShortName">actScale[15:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/act2pi" type="array">
+      <obj_property name="ElementShortName">act2pi[15:0]</obj_property>
+      <obj_property name="ObjectShortName">act2pi[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/dds_phase_corr" type="array">
+      <obj_property name="ElementShortName">dds_phase_corr[26:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_phase_corr[26:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/uut/dds_phase" type="array">
+      <obj_property name="ElementShortName">dds_phase[26:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_phase[26:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/dds_phase_signed" type="array">
+      <obj_property name="ElementShortName">dds_phase_signed[23:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_phase_signed[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseControl_tb/dds_phase_pi" type="array">
+      <obj_property name="ElementShortName">dds_phase_pi[23:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_phase_pi[23:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+</wave_config>

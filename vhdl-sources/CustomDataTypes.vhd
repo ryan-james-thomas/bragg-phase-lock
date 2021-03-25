@@ -14,6 +14,8 @@ package CustomDataTypes is
 constant PARAM_WIDTH        :   natural :=  32;
 constant PHASE_WIDTH        :   natural :=  27;
 constant CORDIC_WIDTH       :   natural :=  16;
+constant FIFO_WIDTH         :   natural :=  16;
+constant FIFO_TIMEOUT       :   unsigned(27 downto 0)   :=  to_unsigned(125000000,28);
 
 subtype t_param_reg is std_logic_vector(PARAM_WIDTH-1 downto 0);
 subtype t_adc_combined is std_logic_vector(31 downto 0);
@@ -35,7 +37,7 @@ constant MEM_DATA_WIDTH :   natural :=  16;
 subtype t_mem_addr is unsigned(MEM_ADDR_WIDTH-1 downto 0);
 subtype t_mem_data is std_logic_vector(MEM_DATA_WIDTH-1 downto 0);
 
-type t_status is (idle,waiting,reading,writing,processing,running,finishing);
+type t_status is (idle,waiting,reading,writing,processing,running,finishing,counting);
 
 --
 -- Defines data buses for handling block memories
@@ -75,6 +77,36 @@ constant INIT_MEM_BUS_SLAVE     :   t_mem_bus_slave :=  (data   =>  (others => '
                                                          status =>  idle);
 constant INIT_MEM_BUS           :   t_mem_bus       :=  (m  =>  INIT_MEM_BUS_MASTER,
                                                          s  =>  INIT_MEM_BUS_SLAVE);
+
+type t_fifo_bus_master is record
+    status  :   t_status;
+    reset   :   std_logic;
+    rd_en   :   std_logic;
+    count   :   unsigned(27 downto 0);
+end record t_fifo_bus_master;
+
+type t_fifo_bus_slave is record
+    data    :   std_logic_vector(FIFO_WIDTH-1 downto 0);
+    valid   :   std_logic;
+    empty   :   std_logic;
+    full    :   std_logic;
+end record t_fifo_bus_slave;
+
+type t_fifo_bus is record
+    m   :   t_fifo_bus_master;
+    s   :   t_fifo_bus_slave;
+end record t_fifo_bus;
+
+constant INIT_FIFO_BUS_MASTER    :  t_fifo_bus_master :=(rd_en  =>  '0',
+                                                         reset  =>  '0',
+                                                         status =>  idle,
+                                                         count  =>  (others => '0'));
+constant INIT_FIFO_BUS_SLAVE     :   t_fifo_bus_slave :=(data   =>  (others => '0'),
+                                                         empty  =>  '0',
+                                                         full   =>  '0',
+                                                         valid  =>  '0');
+constant INIT_FIFO_BUS           :   t_FIFO_bus       :=(m  =>  INIT_FIFO_BUS_MASTER,
+                                                         s  =>  INIT_FIFO_BUS_SLAVE);
 
 
 type t_control is record
