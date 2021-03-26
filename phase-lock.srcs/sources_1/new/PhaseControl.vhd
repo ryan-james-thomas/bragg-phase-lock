@@ -17,6 +17,7 @@ entity PhaseControl is
         phase_c     :   in  t_phase;
 
         dds_phase_o :   out t_dds_phase;
+        act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
         valid_o     :   out std_logic
     );
 end PhaseControl;
@@ -115,5 +116,6 @@ act2pi <= unsigned(actScale) when actScale > 0 else PHASE_2PI - unsigned(abs(act
 dds_phase_corr <=  shift_left(resize(act2pi,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3);
 
 dds_phase_o <= dds_phase;
+act_phase_o <= act2pi;
 
 end Behavioural;

@@ -88,6 +88,7 @@ component PhaseControl is
         phase_c     :   in  t_phase;
 
         dds_phase_o :   out t_dds_phase;
+        act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
         valid_o     :   out std_logic
     );
 end component;
@@ -137,6 +138,7 @@ signal regPhaseControl  :   t_param_reg;
 signal phaseControlSig  :   t_phase;
 signal powControl       :   t_dds_phase;
 signal powControlValid  :   std_logic;
+signal actPhase         :   unsigned(CORDIC_WIDTH-1 downto 0);
 
 --
 -- Block memory signals
@@ -150,9 +152,10 @@ signal memValid_i   :   std_logic;
 --
 -- FIFO signals
 --
-signal fifoData     :   std_logic_vector(FIFO_WIDTH-1 downto 0);
-signal fifoValid    :   std_logic;
-signal fifo_bus     :   t_fifo_bus  :=  INIT_FIFO_BUS;
+type t_fifo_data_array is array(natural range <>) of std_logic_vector(FIFO_WIDTH-1 downto 0);
+signal fifoData     :   t_fifo_data_array(1 downto 0);
+signal fifoValid    :   std_logic_vector(1 downto 0);
+signal fifo_bus     :   t_fifo_bus_array(1 downto 0)  :=  (others => INIT_FIFO_BUS);
 signal fifoReg      :   t_param_reg;
 signal enableFIFO   :   std_logic;
 
@@ -204,6 +207,7 @@ port map(
     valid_i     =>  phaseValid,
     phase_c     =>  phaseControlSig,
     dds_phase_o =>  powControl,
+    act_phase_o =>  actPhase,
     valid_o     =>  powControlValid
 );
 
@@ -232,18 +236,33 @@ port map(
 -- FIFO buffering for long data sets
 --
 enableFIFO <= fifoReg(0);
-fifo_bus.m.reset <= triggers(2);
-fifoValid <= phaseValid and enableFIFO;
-fifoData <= std_logic_vector(resize(phase,FIFO_WIDTH));
-SaveDataFIFO: FIFOHandler
-port map(
-    clk         =>  clk,
-    aresetn     =>  aresetn,
-    data_i      =>  fifoData,
-    valid_i     =>  fifoValid,
-    bus_m       =>  fifo_bus.m,
-    bus_s       =>  fifo_bus.s
-);
+fifo_bus(0).m.reset <= triggers(2);
+fifo_bus(1).m.reset <= triggers(2);
+fifoValid(0) <= powControlValid and enableFIFO;
+fifoValid(1) <= powControlValid and enableFIFO;
+fifoData(0) <= std_logic_vector(actPhase) & std_logic_vector(resize(phase,FIFO_WIDTH/2));
+fifoData(1) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
+FIFO_GEN: for I in 0 to 1 generate
+    PhaseMeas_FIFO_X: FIFOHandler
+    port map(
+        clk         =>  clk,
+        aresetn     =>  aresetn,
+        data_i      =>  fifoData(I),
+        valid_i     =>  fifoValid(I),
+        bus_m       =>  fifo_bus(I).m,
+        bus_s       =>  fifo_bus(I).s
+    );
+end generate FIFO_GEN;
+
+--PhaseMeas_FIFO: FIFOHandler
+--port map(
+--    clk         =>  clk,
+--    aresetn     =>  aresetn,
+--    data_i      =>  fifoData(0),
+--    valid_i     =>  fifoValid(0),
+--    bus_m       =>  fifo_bus(0).m,
+--    bus_s       =>  fifo_bus(0).s
+--);
 
 
 --
@@ -273,7 +292,8 @@ begin
         mem_bus.m.trig <= '0';
         mem_bus.m.status <= idle;
         
-        fifo_bus.m.status <= idle;
+        fifo_bus(0).m.status <= idle;
+        fifo_bus(1).m.status <= idle;
     elsif rising_edge(clk) then
         FSM: case(comState) is
             when idle =>
@@ -298,7 +318,8 @@ begin
                         when X"000014" => rw(bus_m,bus_s,comState,regPhase);
                         when X"000018" => rw(bus_m,bus_s,comState,regPhaseControl);
                         when X"00001C" => rw(bus_m,bus_s,comState,fifoReg);
-                        when X"000020" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);
+                        when X"000020" => fifoRead(bus_m,bus_s,comState,fifo_bus(0).m,fifo_bus(0).s);
+                        when X"000024" => fifoRead(bus_m,bus_s,comState,fifo_bus(1).m,fifo_bus(1).s);
                         
                         when others => 
                             comState <= finishing;

@@ -14,7 +14,7 @@ package CustomDataTypes is
 constant PARAM_WIDTH        :   natural :=  32;
 constant PHASE_WIDTH        :   natural :=  27;
 constant CORDIC_WIDTH       :   natural :=  16;
-constant FIFO_WIDTH         :   natural :=  16;
+constant FIFO_WIDTH         :   natural :=  32;
 constant FIFO_TIMEOUT       :   unsigned(27 downto 0)   :=  to_unsigned(125000000,28);
 
 subtype t_param_reg is std_logic_vector(PARAM_WIDTH-1 downto 0);
@@ -96,6 +96,8 @@ type t_fifo_bus is record
     m   :   t_fifo_bus_master;
     s   :   t_fifo_bus_slave;
 end record t_fifo_bus;
+
+type t_fifo_bus_array is array(natural range <>) of t_fifo_bus;
 
 constant INIT_FIFO_BUS_MASTER    :  t_fifo_bus_master :=(rd_en  =>  '0',
                                                          reset  =>  '0',

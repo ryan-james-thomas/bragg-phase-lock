@@ -11,7 +11,8 @@
 
 #define MAP_SIZE 262144UL
 #define MEM_LOC 0x40000000
-#define DATA_LOC 0x00000020
+#define DATA_LOC1 0x00000020
+#define DATA_LOC2 0x00000024
 #define FIFO_LOC 0x0000001C
  
 int main(int argc, char **argv)
@@ -23,6 +24,9 @@ int main(int argc, char **argv)
 
   uint32_t i = 0;
   uint8_t saveType = 0;
+  uint32_t tmp;
+  uint32_t *data;
+  FILE *ptr;
 
   clock_t start, stop;
 
@@ -41,11 +45,16 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
     return 0;
   }
 
-  uint32_t *data = malloc(numSamples * sizeof(uint32_t));
-  if (!data) {
-    printf("Error allocating memory");
-    return -1;
+  if (saveType == 2) {
+    ptr = fopen("SavedData.bin","wb");
+  } else {
+    data = (uint32_t *) malloc(2 * numSamples * sizeof(uint32_t));
+    if (!data) {
+      printf("Error allocating memory");
+      return -1;
+    }
   }
+  
 
   //This returns a file identifier corresponding to the memory, and allows for reading and writing.  O_RDWR is just a constant
   if((fd = open(name, O_RDWR)) < 0) {
@@ -68,39 +77,48 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
   *((uint32_t *)(cfg + FIFO_LOC)) = 1;
 //  printf("FIFO Enabled!\n");
   //Record data
-  if (saveType == 1) {
+  if (saveType == 1 | saveType == 2) {
     start = clock();
   }
- 
-  for (i = 0;i<numSamples;i++) {
-//    tmp = *((uint32_t *)(cfg2));
-    *(data + i) = *((uint32_t *)(cfg + DATA_LOC));
-//    *(data + i) = i;
-    // data[i] = *((uint32_t *)(cfg + (i << 2)));
-//     printf("%08x\n",*(data + i));
+  
+  if (saveType != 2) {
+    for (i = 0;i<2*numSamples;i += 2) {
+      *(data + i) = *((uint32_t *)(cfg + DATA_LOC1));
+      *(data + i + 1) = *((uint32_t *)(cfg + DATA_LOC2));
+    }
+  } else {
+    for (i = 0;i<2*numSamples;i += 2) {
+      tmp = *((uint32_t *)(cfg + DATA_LOC1));
+      fwrite(&tmp,4,1,ptr);
+      tmp = *((uint32_t *)(cfg + DATA_LOC2));
+      fwrite(&tmp,4,1,ptr);
+    }
   }
+  
   //Disable FIFO
-//  *((uint32_t *)(cfg + FIFO_LOC)) = 0;
-  if (saveType == 1) {
+  *((uint32_t *)(cfg + FIFO_LOC)) = 0;
+  if (saveType == 1 | saveType == 2) {
     stop = clock();
     printf("FIFO Disabled!\n");
     printf("Execution time: %.3f ms\n",(double)(stop - start)/CLOCKS_PER_SEC*1e3);
     printf("Time per read: %.3f us\n",(double)(stop - start)/CLOCKS_PER_SEC/(double)(numSamples)*1e6);
   }
-  
+
   if (saveType == 0) {
-    for (i = 0;i<numSamples;i++) {
+    for (i = 0;i<2*numSamples;i++) {
         printf("%08x\n",*(data + i));
     }
+    free(data);
   } else if (saveType == 1) {
-    FILE *ptr;
     ptr = fopen("SavedData.bin","wb");
-    fwrite(data,4,(size_t)numSamples,ptr);
+    fwrite(data,4,(size_t)(2*numSamples),ptr);
+    fclose(ptr);
+    free(data);
+  } else if (saveType == 2) {
     fclose(ptr);
   }
 
   //Unmap cfg from pointing to the previous location in memory
-  free(data);
   munmap(cfg, MAP_SIZE);
   return 0;	//C functions should have a return value - 0 is the usual "no error" return value
 }

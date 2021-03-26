@@ -171,19 +171,12 @@ classdef PhaseLock < handle
             self.samplesCollected.read;
             self.conn.write(0,'mode','fetch data','fetchType',0,'numFetch',self.samplesCollected.get);
             raw = typecast(self.conn.recvMessage,'uint8');
-            d = zeros(self.samplesCollected.value,1);
-
-            mm = 1;
-            for nn=1:4:numel(raw)
-                d(mm) = double(typecast(uint8(raw(nn+(0:1))),'int16'));
-                mm = mm+1;
-            end
             
             if self.memSaveType.value == 0
-                self.data = double(d)/2^13*pi;
+                self.data = self.convertData(raw,'phase');
                 self.t = 1/self.CLK*2^self.cicRate.value*(0:(numel(self.data)-1));
             else
-                self.data = double(d)/2^12;
+                self.data = self.convertData(raw,'voltage');
                 self.t = 1/self.CLK*(0:(numel(self.data)-1));
             end
         end
@@ -194,18 +187,9 @@ classdef PhaseLock < handle
             end
             self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveType',saveType);
             raw = typecast(self.conn.recvMessage,'uint8');
-            d = zeros(numSamples,1);
-
-            mm = 1;
-            for nn=1:4:numel(raw)
-                d(mm) = double(typecast(uint8(raw(nn+(0:1))),'int16'));
-                mm = mm+1;
-            end
-            
-            if self.memSaveType.value == 0
-                self.data = double(d)/2^13*pi;
-                self.t = 1/self.CLK*2^self.cicRate.value*(0:(numel(self.data)-1));
-            end
+            [ph,act,dds] = self.convertData(raw,'phase');
+            self.data = [ph,act,dds];
+            self.t = 1/self.CLK*2^self.cicRate.value*(0:(size(self.data,1)-1));
         end
         
         function disp(self)
@@ -233,6 +217,52 @@ classdef PhaseLock < handle
         end
         
         
+    end
+    
+    methods(Static)
+        function [y,t] = loadData(filename,dt)
+            if nargin == 0 || isempty(filename)
+                filename = 'SavedData.bin';
+            end
+            
+            %Load data
+            fid = fopen(filename,'r');
+            fseek(fid,0,'eof');
+            fsize = ftell(fid);
+            frewind(fid);
+            x = fread(fid,fsize,'uint8');
+            fclose(fid);
+            
+            [ph,act,dds] = PhaseLock.convertData(x,'phase');
+            t = dt*(0:(numel(ph)-1));
+            y = [ph,act,dds];
+        end
+        
+        function varargout = convertData(raw,method)
+            Nraw = numel(raw);
+            d = zeros(Nraw/8,3);
+
+            mm = 1;
+            for nn=1:8:numel(raw)
+                d(mm,1) = double(typecast(uint8(raw(nn+(0:1))),'int16'));
+                d(mm,2) = double(typecast(uint8(raw(nn+(2:3))),'int16'));
+                d(mm,3) = double(typecast(uint8(raw(nn+(4:7))),'uint32'));
+                mm = mm+1;
+            end
+            
+            switch lower(method)
+                case 'voltage'
+                    v = double(d)/2^12;
+                    varargout{1} = v;
+                case 'phase'
+                    ph = double(d(:,1))/2^13*pi;
+                    act = double(d(:,2))/2^14*2*pi;
+                    dds = double(d(:,3))/2^27*2*pi;
+                    varargout = {ph,act,dds};
+                otherwise
+                    error('Data type unsupported!');
+            end
+        end
     end
     
 end
