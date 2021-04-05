@@ -137,6 +137,20 @@ end record t_module_status;
 constant INIT_MODULE_STATUS     :   t_module_status :=  (started    =>  '0',
                                                          running    =>  '0',
                                                          done       =>  '0');
+
+
+type t_timing_control is record
+    enable  :   std_logic;
+    df      :   t_dds_phase;
+    pow     :   t_dds_phase;
+    valid   :   std_logic;
+end record t_timing_control;
+
+constant INIT_TIMING_CONTROL    :   t_timing_control    :=  (enable => '0',
+                                                             valid  => '0',
+                                                             df     => (others => '0'),
+                                                             pow    => (others => '0'));
+
 end CustomDataTypes;
 
 --------------------------------------------------------------------------------------------------
