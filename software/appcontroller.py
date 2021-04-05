@@ -18,7 +18,7 @@ def write(data,header):
     elif header["mode"] == "fetch data":
         cmd = ['./fetchData',format(header["numFetch"]),format(header["fetchType"])]
     elif header["mode"] == "acquire phase":
-        cmd = ['./saveData',format(header["numSamples"]),format(header["saveType"])]
+        cmd = ['./saveData',format(header["numSamples"]),format(header["saveType"]),format(header["saveStreams"])]
     # elif header["mode"] == "fetch raw":
     #     cmd = ['./fetchData',format(header["numFetch"]),'0']
     # elif header["mode"] == "fetch processed":

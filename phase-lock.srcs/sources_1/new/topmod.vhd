@@ -171,12 +171,14 @@ signal memValid_i   :   std_logic;
 --
 -- FIFO signals
 --
+constant NUM_FIFOS  :   natural :=  3;
 type t_fifo_data_array is array(natural range <>) of std_logic_vector(FIFO_WIDTH-1 downto 0);
-signal fifoData     :   t_fifo_data_array(2 downto 0);
-signal fifoValid    :   std_logic_vector(2 downto 0);
-signal fifo_bus     :   t_fifo_bus_array(2 downto 0)  :=  (others => INIT_FIFO_BUS);
+signal fifoData     :   t_fifo_data_array(NUM_FIFOS-1 downto 0);
+signal fifoValid    :   std_logic_vector(NUM_FIFOS-1 downto 0);
+signal fifo_bus     :   t_fifo_bus_array(NUM_FIFOS-1 downto 0)  :=  (others => INIT_FIFO_BUS);
 signal fifoReg      :   t_param_reg;
 signal enableFIFO   :   std_logic;
+signal debugCount   :   unsigned(7 downto 0);
 
 begin
 
@@ -248,37 +250,34 @@ port map(
 --
 -- Save data
 --
-memSwitch <= topReg(3 downto 0);
-mem_bus.m.reset <= triggers(1); --This serves as a "start" trigger, and the memory will save data up to its size
-memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
-                std_logic_vector(resize(phase,memData_i'length));
-memValid_i <=   '1' when memSwitch = X"F" else
-                phaseValid;      
+--memSwitch <= topReg(3 downto 0);
+--mem_bus.m.reset <= triggers(1); --This serves as a "start" trigger, and the memory will save data up to its size
+--memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
+--                std_logic_vector(resize(phase,memData_i'length));
+--memValid_i <=   '1' when memSwitch = X"F" else
+--                phaseValid;      
 
-SaveData: BlockMemHandler
-port map(
-    clk         =>  clk,
-    aresetn     =>  aresetn,
-    data_i      =>  memData_i,
-    valid_i     =>  memValid_i,
-    bus_m       =>  mem_bus.m,
-    bus_s       =>  mem_bus.s
-);
+--SaveData: BlockMemHandler
+--port map(
+--    clk         =>  clk,
+--    aresetn     =>  aresetn,
+--    data_i      =>  memData_i,
+--    valid_i     =>  memValid_i,
+--    bus_m       =>  mem_bus.m,
+--    bus_s       =>  mem_bus.s
+--);
                
 --
 -- FIFO buffering for long data sets
 --
 enableFIFO <= fifoReg(0);
-fifo_bus(0).m.reset <= triggers(2);
-fifo_bus(1).m.reset <= triggers(2);
-fifo_bus(2).m.reset <= triggers(2);
-fifoValid(0) <= powControlValid and enableFIFO;
-fifoValid(1) <= powControlValid and enableFIFO;
-fifoValid(2) <= adcCICvalid_o and enableFIFO;
-fifoData(0) <= std_logic_vector(actPhase) & std_logic_vector(resize(phase,FIFO_WIDTH/2));
-fifoData(1) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
-fifoData(2) <= std_logic_vector(resize(adcCIC,FIFO_WIDTH));
-FIFO_GEN: for I in 0 to 2 generate
+--fifoData(0) <= std_logic_vector(debugCount) & std_logic_vector(resize(phase,FIFO_WIDTH-8));
+fifoData(0) <= std_logic_vector(resize(phase,FIFO_WIDTH));
+fifoData(1) <= std_logic_vector(resize(actPhase,FIFO_WIDTH));
+fifoData(2) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
+FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
+    fifo_bus(I).m.reset <= triggers(2);
+    fifoValid(I) <= powControlValid and enableFIFO;
     PhaseMeas_FIFO_X: FIFOHandler
     port map(
         clk         =>  clk,
@@ -289,6 +288,15 @@ FIFO_GEN: for I in 0 to 2 generate
         bus_s       =>  fifo_bus(I).s
     );
 end generate FIFO_GEN;
+
+--DebugCountProc: process(clk,aresetn) is
+--begin
+--    if aresetn = '0' then
+--        debugCount <= (others => '0');
+--    elsif fifoValid(1) = '1' then
+--        debugCount <= debugCount + X"1";
+--    end if;
+--end process;
 
 --PhaseMeas_FIFO: FIFOHandler
 --port map(
@@ -379,8 +387,7 @@ begin
                     --
                     -- Read phase data
                     --
-                    when X"02" => memRead(bus_m,bus_s,comState,mem_bus.m,mem_bus.s);
---                    when X"03" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);   
+--                    when X"02" => memRead(bus_m,bus_s,comState,mem_bus.m,mem_bus.s); 
                         
                     when others => 
                         comState <= finishing;
