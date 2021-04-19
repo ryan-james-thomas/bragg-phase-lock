@@ -139,8 +139,8 @@ port map(
 --
 -- Multiply the input signal with the I and Q mixing signals
 --
-dds_cos <= std_logic_vector(resize(signed(dds_combined(15 downto 0)),dds_cos'length));
-dds_sin <= std_logic_vector(resize(signed(dds_combined(31 downto 16)),dds_sin'length));
+dds_cos <= std_logic_vector(shift_left(resize(signed(dds_combined(15 downto 0)),dds_cos'length),2));
+dds_sin <= std_logic_vector(shift_left(resize(signed(dds_combined(31 downto 16)),dds_sin'length),2));
 
 I_Mixer: MultMixer
 port map(
