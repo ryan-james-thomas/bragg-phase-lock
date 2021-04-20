@@ -137,6 +137,15 @@ end record t_module_status;
 constant INIT_MODULE_STATUS     :   t_module_status :=  (started    =>  '0',
                                                          running    =>  '0',
                                                          done       =>  '0');
+                                                         
+type t_iq_data is record
+    I       :   signed(23 downto 0);
+    Q       :   signed(23 downto 0);
+    valid   :   std_logic;
+end record t_iq_data;
+
+constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (others => '0'), valid => '0');
+                                                     
 end CustomDataTypes;
 
 --------------------------------------------------------------------------------------------------
