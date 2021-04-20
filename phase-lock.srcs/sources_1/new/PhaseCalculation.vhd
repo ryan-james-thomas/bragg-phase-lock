@@ -16,6 +16,8 @@ entity PhaseCalculation is
         reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
         
+        iq_o            :   out t_iq_data;          --Output I/Q data
+        
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
     );
@@ -139,8 +141,8 @@ port map(
 --
 -- Multiply the input signal with the I and Q mixing signals
 --
-dds_cos <= std_logic_vector(shift_left(resize(signed(dds_combined(15 downto 0)),dds_cos'length),2));
-dds_sin <= std_logic_vector(shift_left(resize(signed(dds_combined(31 downto 16)),dds_sin'length),2));
+dds_cos <= std_logic_vector(shift_left(resize(signed(dds_combined(15 downto 0)),dds_cos'length),6));
+dds_sin <= std_logic_vector(shift_left(resize(signed(dds_combined(31 downto 16)),dds_sin'length),6));
 
 I_Mixer: MultMixer
 port map(
@@ -201,6 +203,10 @@ validPhase_i <= validQcic and validIcic;
 Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)+6),Iphase_i'length));
 Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)+6),Qphase_i'length));
 tdataPhase <= Qphase_i & Iphase_i;
+--iq_o <= (I => signed(Iphase_i), Q => signed(Qphase_i), valid => validPhase_i);
+iq_o <= (I => resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length),
+         Q => resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length),
+         valid => validPhase_i);
 MakePhase: PhaseCalc
 PORT MAP (
     aclk                    => clk,

@@ -14,6 +14,8 @@
 #define DATA_LOC1 0x00000020
 #define DATA_LOC2 0x00000024
 #define DATA_LOC3 0x00000028
+#define DATA_LOC4 0x0000002C
+#define DATA_LOC5 0x00000030
 #define FIFO_LOC 0x0000001C
  
 int main(int argc, char **argv)
@@ -54,7 +56,7 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
     return 0;
   }
 
-  uint8_t saveFactor = (saveStreams & 1) + ((saveStreams & 0b10) >> 1) + ((saveStreams & 0b100) >> 2);
+  uint8_t saveFactor = (saveStreams & 1) + ((saveStreams & 0b10) >> 1) + ((saveStreams & 0b100) >> 2) +  ((saveStreams & 0b1000) >> 3) +  ((saveStreams & 0b10000) >> 4);
   // printf("Save factor: %d\n",saveFactor);
   dataSize = saveFactor*numSamples;
 
@@ -96,19 +98,25 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
   
   if (saveType != 2) {
     for (i = 0;i<dataSize;i += saveFactor) {
-      if (saveStreams & 1) {
+      if (saveStreams & 0b1) {
         *(data + i) = *((uint32_t *)(cfg + DATA_LOC1));
       }
-      if (saveStreams & 2) {
+      if (saveStreams & 0b10) {
         *(data + i + 1) = *((uint32_t *)(cfg + DATA_LOC2));
       }
-      if (saveStreams & 4) {
+      if (saveStreams & 0b100) {
         *(data + i + 2) = *((uint32_t *)(cfg + DATA_LOC3));
+      }
+      if (saveStreams & 0b1000) {
+        *(data + i + 3) = *((uint32_t *)(cfg + DATA_LOC4));
+      }
+      if (saveStreams & 0b10000) {
+        *(data + i + 4) = *((uint32_t *)(cfg + DATA_LOC5));
       }
     }
   } else {
     for (i = 0;i<dataSize;i += saveFactor) {
-      if (saveStreams & 0xb1) {
+      if (saveStreams & 0b1) {
         tmp = *((uint32_t *)(cfg + DATA_LOC1));
         fwrite(&tmp,4,1,ptr);
       }
@@ -118,6 +126,14 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
       }
       if (saveStreams & 0b100) {
         tmp = *((uint32_t *)(cfg + DATA_LOC3));
+        fwrite(&tmp,4,1,ptr);
+      }
+      if (saveStreams & 0b1000) {
+        tmp = *((uint32_t *)(cfg + DATA_LOC4));
+        fwrite(&tmp,4,1,ptr);
+      }
+      if (saveStreams & 0b10000) {
+        tmp = *((uint32_t *)(cfg + DATA_LOC5));
         fwrite(&tmp,4,1,ptr);
       }
     }
