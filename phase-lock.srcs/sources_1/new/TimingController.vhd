@@ -10,8 +10,7 @@ entity TimingController is
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
 
-        valid_i     :   in  std_logic;
-        data_i      :   in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        bus_m_i     :   in  t_mem_bus_master;
 
         start_i     :   in  std_logic;
         data_o      :   out t_timing_control
@@ -20,36 +19,31 @@ end TimingController;
 
 architecture rtl of TimingController is
 
-component BlockMemHandler is
+component BlockMemHandlerRAM is
     port(
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
         
-        data_i      :   in  std_logic_vector;
-        valid_i     :   in  std_logic;
-        
-        bus_m       :   in  t_mem_bus_master;
+        bus_m_wr    :   in  t_mem_bus_master;
+        bus_m_rd    :   in  t_mem_bus_master;
         bus_s       :   out t_mem_bus_slave
     );
 end component;
 
 signal mem_bus  :   t_mem_bus   :=  INIT_MEM_BUS;
 
-type t_state_local is (idle,preload,reading,executing,outputting);
+type t_state_local is (idle,preload_reading,preload_waiting,reading,finishing);
 signal state    :   t_status_local  :=  idle;
 
 begin
 
-
-
-StoreTimingData: BlockMemHandler
+StoreTimingData: BlockMemHandlerRAM
 port map(
     clk         =>  clk,
     aresetn     =>  aresetn,
-    data_i      =>  data_i,
-    valid_i     =>  valid_i,
-    bus_m       =>  bus_m,
-    bus_s       =>  bus_s
+    bus_m_wr    =>  bus_m_i,
+    bus_m_rd    =>  mem_bus.m,
+    bus_s       =>  mem_bus.s
 );
 
 
@@ -58,19 +52,48 @@ begin
     if aresetn = '0' then
         state <= idle;
         data_o <= INIT_TIMING_CONTROL;
-        bus_m.m <= INIT_MEM_BUS_MASTER;
+        mem_bus.m <= INIT_MEM_BUS_MASTER;
 
     elsif rising_edge(clk) then
         FSM: case (state) is
             when idle =>
-                if valid_i = '1' then
-                    state <= preload;
+                if bus_m_i.trig = '1' then
+                    state <= preload_reading;
                 elsif start_i = '1' then
-                    state <= outputting;
+                    data_o.valid <= '1';
+                    data_o.enable <= '1';
+                    mem_bus.m.trig <= '1';
+                    mem_bus.m.addr <= mem_bus.m.addr + 1;
+                    state <= reading;
                 end if;
 
-            when preload =>
+            when reading =>
+                mem_bus.m.trig <= '0';
+                data_o.valid <= '0';
+                if mem_bus.s.valid = '1' then
+                    data_o.df <= mem_bus.s.data(data_o.df'length-1 downto 0);
+                    data_o.pow <= mem_bus.s.data(data_o.df'length+data_o.pow'length-1 downto data_o.df'length);
+                    if mem_bus.m.addr = mem_bus.s.last then
+                        state <= finishing;
+                    else
+                        state <= idle;
+                    end if;
+                end if;
+
+                
+
+            when preload_reading =>
                 mem_bus.m.trig <= '1';
+                mem_bus.m.addr <= (others => '0');
+                state <= preload_waiting;
+
+            when preload_waiting =>
+                mem_bus.m.trig <= '0';
+                if mem_bus.s.valid = '1' then
+                    data_o.df <= mem_bus.s.data(data_o.df'length-1 downto 0);
+                    data_o.pow <= mem_bus.s.data(data_o.df'length+data_o.pow'length-1 downto data_o.df'length);
+                    state <= idle;
+                end if;
                 
 
         end case;

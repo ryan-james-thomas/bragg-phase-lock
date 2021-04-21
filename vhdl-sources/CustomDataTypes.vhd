@@ -47,6 +47,7 @@ type t_mem_bus_master is record
     trig    :   std_logic;
     reset   :   std_logic;
     status  :   t_status;
+    data    :   t_mem_data;
 end record t_mem_bus_master;
 
 type t_mem_bus_slave is record
@@ -70,7 +71,8 @@ type t_mem_bus_slave_array is array(natural range <>) of t_mem_bus_slave;
 constant INIT_MEM_BUS_MASTER    :  t_mem_bus_master :=  (addr   =>  (others => '0'),
                                                          trig   =>  '0',
                                                          reset  =>  '0',
-                                                         status =>  idle);
+                                                         status =>  idle,
+                                                         data   =>  (others => '0'));
 constant INIT_MEM_BUS_SLAVE     :   t_mem_bus_slave :=  (data   =>  (others => '0'),
                                                          valid  =>  '0',
                                                          last   =>  (others => '0'),
