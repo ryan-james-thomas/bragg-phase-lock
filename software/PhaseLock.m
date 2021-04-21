@@ -187,7 +187,7 @@ classdef PhaseLock < handle
         
         function self = getPhaseData(self,numSamples,saveStreams)
             if nargin < 3
-                saveStreams = 0;
+                saveStreams = 1;
             end
             self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveStreams,'saveType',0);
             raw = typecast(self.conn.recvMessage,'uint8');
@@ -255,7 +255,7 @@ classdef PhaseLock < handle
             end
             raw = raw(:);
             Nraw = numel(raw);
-            bits = bitget(streams,1:3);
+            bits = bitget(streams,1:7);
             numStreams = sum(bits);
             d = zeros(Nraw/(numStreams*4),numStreams,'uint32');
             
@@ -281,6 +281,8 @@ classdef PhaseLock < handle
                     data.ph = [];
                     data.act = [];
                     data.dds = [];
+                    data.I = [];
+                    data.Q = [];
 %                     data.idx = [];
                     if bits(1)
 %                         dd = reshape(typecast(d(:,1),'uint8'),4,numel(d(:,1)));
@@ -295,6 +297,14 @@ classdef PhaseLock < handle
                     if bits(3)
                         idx = sum(bits(1:3));   
                         data.dds = unwrap(double(d(:,idx))/2^27*2*pi);
+                    end
+                    if bits(4)
+                        idx = sum(bits(1:4));
+                        data.I = double(typecast(d(:,idx),'int32'));
+                    end
+                    if bits(5)
+                        idx = sum(bits(1:5));
+                        data.Q = double(typecast(d(:,idx),'int32'));
                     end
                     varargout{1} = data;
                 otherwise
