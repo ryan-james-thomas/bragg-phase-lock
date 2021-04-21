@@ -181,15 +181,15 @@ classdef PhaseLock < handle
             end
         end
         
-        function self = getPhaseData(self,numSamples,saveType)
+        function self = getPhaseData(self,numSamples,saveStreams)
             if nargin < 3
-                saveType = 0;
+                saveStreams = 1;
             end
-            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveType',saveType);
+            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveStreams,'saveType',0);
             raw = typecast(self.conn.recvMessage,'uint8');
-            [ph,act,dds] = self.convertData(raw,'phase');
-            self.data = [ph,act,dds];
-            self.t = 1/self.CLK*2^self.cicRate.value*(0:(size(self.data,1)-1));
+            d = self.convertData(raw,'phase',saveStreams);
+            self.data = d;
+            self.t = 1/self.CLK*2^self.cicRate.value*(0:(numSamples-1));
         end
         
         function disp(self)
@@ -220,7 +220,7 @@ classdef PhaseLock < handle
     end
     
     methods(Static)
-        function [y,t] = loadData(filename,dt)
+        function d = loadData(filename,dt,streams)
             if nargin == 0 || isempty(filename)
                 filename = 'SavedData.bin';
             end
@@ -233,32 +233,75 @@ classdef PhaseLock < handle
             x = fread(fid,fsize,'uint8');
             fclose(fid);
             
-            [ph,act,dds] = PhaseLock.convertData(x,'phase');
-            t = dt*(0:(numel(ph)-1));
-            y = [ph,act,dds];
+            d = PhaseLock.convertData(x,'phase',streams);
+            if ~isempty(d.ph)
+                N = numel(d.ph);
+            elseif ~isempty(d.act)
+                N = numel(d.act);
+            elseif ~isempty(d.dds)
+                N = numel(d.dds);
+            end
+            d.t = dt*(0:(N-1));
         end
         
-        function varargout = convertData(raw,method)
-            Nraw = numel(raw);
-            d = zeros(Nraw/8,3);
-
-            mm = 1;
-            for nn=1:8:numel(raw)
-                d(mm,1) = double(typecast(uint8(raw(nn+(0:1))),'int16'));
-                d(mm,2) = double(typecast(uint8(raw(nn+(2:3))),'int16'));
-                d(mm,3) = double(typecast(uint8(raw(nn+(4:7))),'uint32'));
-                mm = mm+1;
+        function varargout = convertData(raw,method,streams)
+            if nargin < 3 || isempty(streams)
+                streams = 1;
             end
+            raw = raw(:);
+            Nraw = numel(raw);
+            bits = bitget(streams,1:7);
+            numStreams = sum(bits);
+            d = zeros(Nraw/(numStreams*4),numStreams,'uint32');
+            
+            raw = reshape(raw,4*numStreams,Nraw/(4*numStreams));
+            for nn = 1:numStreams
+                d(:,nn) = typecast(uint8(reshape(raw((nn-1)*4+(1:4),:),4*size(d,1),1)),'uint32');
+            end
+%                 
+%             
+%             mm = 1;
+%             for nn=1:(numStreams*4):numel(raw)
+%                 d(mm,1) = double(typecast(uint8(raw(nn+(0:3))),'int32'));
+%                 d(mm,2) = double(typecast(uint8(raw(nn+(4:7))),'uint32'));
+%                 d(mm,3) = double(typecast(uint8(raw(nn+(8:11))),'uint32'));
+%                 mm = mm+1;
+%             end
             
             switch lower(method)
                 case 'voltage'
                     v = double(d)/2^12;
                     varargout{1} = v;
                 case 'phase'
-                    ph = double(d(:,1))/2^13*pi;
-                    act = double(d(:,2))/2^14*2*pi;
-                    dds = double(d(:,3))/2^27*2*pi;
-                    varargout = {ph,act,dds};
+                    data.ph = [];
+                    data.act = [];
+                    data.dds = [];
+                    data.I = [];
+                    data.Q = [];
+%                     data.idx = [];
+                    if bits(1)
+%                         dd = reshape(typecast(d(:,1),'uint8'),4,numel(d(:,1)));
+%                         data.idx = double(dd(4,:));
+%                         dd(4,:) = uint8(0);
+                        data.ph = double(typecast(d(:,1),'int32'))/2^(24-3)*pi;
+                    end
+                    if bits(2)
+                        idx = sum(bits(1:2));
+                        data.act = unwrap(double(d(:,idx))/2^(24-3)*pi);
+                    end
+                    if bits(3)
+                        idx = sum(bits(1:3));   
+                        data.dds = unwrap(double(d(:,idx))/2^27*2*pi);
+                    end
+                    if bits(4)
+                        idx = sum(bits(1:4));
+                        data.I = double(typecast(d(:,idx),'int32'));
+                    end
+                    if bits(5)
+                        idx = sum(bits(1:5));
+                        data.Q = double(typecast(d(:,idx),'int32'));
+                    end
+                    varargout{1} = data;
                 otherwise
                     error('Data type unsupported!');
             end

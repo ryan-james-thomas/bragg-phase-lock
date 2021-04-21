@@ -13,7 +13,7 @@ package CustomDataTypes is
 --
 constant PARAM_WIDTH        :   natural :=  32;
 constant PHASE_WIDTH        :   natural :=  27;
-constant CORDIC_WIDTH       :   natural :=  16;
+constant CORDIC_WIDTH       :   natural :=  24;
 constant FIFO_WIDTH         :   natural :=  32;
 constant FIFO_TIMEOUT       :   unsigned(27 downto 0)   :=  to_unsigned(125000000,28);
 
@@ -21,7 +21,7 @@ subtype t_param_reg is std_logic_vector(PARAM_WIDTH-1 downto 0);
 subtype t_adc_combined is std_logic_vector(31 downto 0);
 subtype t_adc is signed(13 downto 0);
 subtype t_dds_phase is unsigned(PHASE_WIDTH-1 downto 0);
-subtype t_phase is signed(23 downto 0);
+subtype t_phase is signed(31 downto 0);
 
 --type t_param_reg_array is array(natural range <>) of t_param_reg;
 
@@ -137,6 +137,15 @@ end record t_module_status;
 constant INIT_MODULE_STATUS     :   t_module_status :=  (started    =>  '0',
                                                          running    =>  '0',
                                                          done       =>  '0');
+                                                         
+type t_iq_data is record
+    I       :   signed(23 downto 0);
+    Q       :   signed(23 downto 0);
+    valid   :   std_logic;
+end record t_iq_data;
+
+constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (others => '0'), valid => '0');
+                                                     
 end CustomDataTypes;
 
 --------------------------------------------------------------------------------------------------
