@@ -110,6 +110,25 @@ component FIFOHandler is
     );
 end component;
 
+--
+-- Testing
+--
+COMPONENT CIC_BigDecimation
+  PORT (
+    aclk : IN STD_LOGIC;
+    aresetn : IN STD_LOGIC;
+    s_axis_data_tdata : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+    s_axis_data_tvalid : IN STD_LOGIC;
+    s_axis_data_tready : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(55 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC
+  );
+END COMPONENT;
+
+constant CIC_SHIFT  :   natural :=  39;
+signal adcCICvalid_o, adcCICvalid_i  :   std_logic;
+signal adcCICdata   :   std_logic_vector(55 downto 0);
+signal adcCIC       :   signed(15 downto 0);
 
 --
 -- Communication signals
@@ -171,6 +190,20 @@ signal resetExtended:   std_logic;
 signal resetCount   :   unsigned(7 downto 0);
 
 begin
+
+CICBig: CIC_BigDecimation
+PORT MAP (
+    aclk                =>  clk,
+    aresetn             =>  aresetn,
+    s_axis_data_tdata   =>  adcData_i,
+    s_axis_data_tvalid  =>  '1',
+    s_axis_data_tready  =>  open,
+    m_axis_data_tdata   =>  adcCICdata,
+    m_axis_data_tvalid  =>  adcCICvalid_o
+);
+
+adcCIC <= resize(shift_right(signed(adcCICdata),CIC_SHIFT),adcCIC'length);
+
 
 --
 -- DDS output signals
