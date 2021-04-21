@@ -7,7 +7,8 @@ use work.AXI_Bus_Package.all;
  
 entity topmod is
     port (
-        clk             :   in  std_logic;
+        sysclk          :   in  std_logic;
+        adcclk          :   in  std_logic;
         aresetn         :   in  std_logic;
  
         addr_i          :   in  unsigned(AXI_ADDR_WIDTH-1 downto 0);            --Address out
@@ -19,7 +20,7 @@ entity topmod is
         m_axis_tdata    :   out std_logic_vector(31 downto 0);
         m_axis_tvalid   :   out std_logic;
         
-        adcData_i       :   in  std_logic_vector(15 downto 0)
+        adcData_i       :   in  std_logic_vector(31 downto 0)
     );
 end topmod;
  
@@ -97,7 +98,8 @@ end component;
 
 component FIFOHandler is
     port(
-        clk         :   in  std_logic;
+        wr_clk      :   in  std_logic;
+        rd_clk      :   in  std_logic;
         aresetn     :   in  std_logic;
         
         data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
@@ -165,6 +167,9 @@ signal fifoReg      :   t_param_reg;
 signal enableFIFO   :   std_logic;
 signal debugCount   :   unsigned(7 downto 0);
 
+signal resetExtended:   std_logic;
+signal resetCount   :   unsigned(7 downto 0);
+
 begin
 
 --
@@ -174,7 +179,7 @@ ftw1 <= f0 + df;
 ftw2 <= f0 - df;
 DDS_2Channel: DualChannelDDS
 port map(
-    clk             =>  clk,
+    clk             =>  adcclk,
     aresetn         =>  aresetn,
     pow1            =>  powControl,
     ftw1            =>  ftw1,
@@ -188,10 +193,22 @@ port map(
 --
 adc <= signed(adcData_i(adc'length-1 downto 0));
 --df8 <= shift_left(df,to_integer(unsigned(topReg(7 downto 4))));
-regPhaseValid <= triggers(0);
+RegPhaseValid_Sync: process(adcclk,aresetn) is
+begin
+    if aresetn = '0' then
+        regPhaseValid <= '0';
+    elsif rising_edge(adcclk) then
+        if triggers(0) = '1' then
+            regPhaseValid <= '1';
+        else
+            regPhaseValid <= '0';
+        end if;
+    end if;
+end process;
+
 PhaseCalc: PhaseCalculation
 port map(
-    clk         =>  clk,
+    clk         =>  adcclk,
     aresetn     =>  aresetn,
     adcData_i   =>  adc,
     freq_i      =>  df8,
@@ -207,7 +224,7 @@ port map(
 --
 MainPhaseControl: PhaseControl
 port map(
-    clk         =>  clk,
+    clk         =>  adcclk,
     aresetn     =>  aresetn,
     reg0        =>  regPhaseControl,
     phase_i     =>  phase,
@@ -242,6 +259,23 @@ port map(
 --
 -- FIFO buffering for long data sets
 --
+ResetExtend: process(adcclk,aresetn) is
+begin
+    if aresetn = '0' then
+        resetExtended <= '0';
+        resetCount <= (others => '0');
+    elsif rising_edge(adcclk) then
+        if triggers(2) = '1' then
+            resetExtended <= '1';
+            resetCount <= X"01";
+        elsif resetCount < 20 then
+            resetCount <= resetCount + 1;
+        else
+            resetExtended <= '0';
+        end if;
+    end if;
+end process;
+
 enableFIFO <= fifoReg(0);
 --fifoData(0) <= std_logic_vector(debugCount) & std_logic_vector(resize(phase,FIFO_WIDTH-8));
 fifoData(0) <= std_logic_vector(resize(phase,FIFO_WIDTH));
@@ -250,13 +284,14 @@ fifoData(2) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
 fifoData(3) <= std_logic_vector(resize(iqData.I,FIFO_WIDTH));
 fifoData(4) <= std_logic_vector(resize(iqData.Q,FIFO_WIDTH));
 FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
-    fifo_bus(I).m.reset <= triggers(2);
+    fifo_bus(I).m.reset <= resetExtended;
     
     NORMAL_OP: if I < 3 generate
         fifoValid(I) <= powControlValid and enableFIFO;
         PhaseMeas_FIFO_NORMAL_X: FIFOHandler
         port map(
-            clk         =>  clk,
+            wr_clk      =>  adcclk,
+            rd_clk      =>  sysclk,
             aresetn     =>  aresetn,
             data_i      =>  fifoData(I),
             valid_i     =>  fifoValid(I),
@@ -269,7 +304,8 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
         fifoValid(I) <= iqData.valid and enableFIFO;
         PhaseMeas_FIFO_IQ_X: FIFOHandler
         port map(
-            clk         =>  clk,
+            wr_clk      =>  adcclk,
+            rd_clk      =>  sysclk,
             aresetn     =>  aresetn,
             data_i      =>  fifoData(I),
             valid_i     =>  fifoValid(I),
@@ -307,7 +343,7 @@ bus_m.valid <= dataValid_i;
 bus_m.data <= writeData_i;
 readData_o <= bus_s.data;
 resp_o <= bus_s.resp;
-Parse: process(clk,aresetn) is
+Parse: process(sysclk,aresetn) is
 begin
     if aresetn = '0' then
         comState <= idle;
@@ -332,7 +368,7 @@ begin
         fifo_bus(2).m.status <= idle;
         fifo_bus(3).m.status <= idle;
         fifo_bus(4).m.status <= idle;
-    elsif rising_edge(clk) then
+    elsif rising_edge(sysclk) then
         FSM: case(comState) is
             when idle =>
                 triggers <= (others => '0');

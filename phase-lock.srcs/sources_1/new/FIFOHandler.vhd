@@ -7,7 +7,8 @@ use work.AXI_Bus_Package.all;
 
 entity FIFOHandler is
     port(
-        clk         :   in  std_logic;
+        wr_clk      :   in  std_logic;
+        rd_clk      :   in  std_logic;
         aresetn     :   in  std_logic;
         
         data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
@@ -21,16 +22,17 @@ end FIFOHandler;
 architecture Behavioral of FIFOHandler is
 
 COMPONENT FIFO_Continuous
-    PORT (
-        clk : IN STD_LOGIC;
-        rst : IN STD_LOGIC;
-        din : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
-        wr_en : IN STD_LOGIC;
-        rd_en : IN STD_LOGIC;
-        dout : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
-        full : OUT STD_LOGIC;
-        empty : OUT STD_LOGIC
-    );
+  PORT (
+    rst : IN STD_LOGIC;
+    wr_clk : IN STD_LOGIC;
+    rd_clk : IN STD_LOGIC;
+    din : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    wr_en : IN STD_LOGIC;
+    rd_en : IN STD_LOGIC;
+    dout : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
+    full : OUT STD_LOGIC;
+    empty : OUT STD_LOGIC
+  );
 END COMPONENT;
 
 signal rst  :   std_logic;
@@ -39,11 +41,11 @@ begin
 
 rst <= not(aresetn) or bus_m.reset;
 
-ValidDelay: process(clk,aresetn) is
+ValidDelay: process(rd_clk,aresetn) is
 begin
     if aresetn = '0' then
         bus_s.valid <= '0';
-    elsif rising_edge(clk) then
+    elsif rising_edge(rd_clk) then
         if bus_m.rd_en = '1' then
             bus_s.valid <= '1';
         else
@@ -54,7 +56,8 @@ end process;
 
 FIFO: FIFO_Continuous
 port map(
-    clk         =>  clk,
+    wr_clk      =>  wr_clk,
+    rd_clk      =>  rd_clk,
     rst         =>  rst,
     din         =>  data_i,
     wr_en       =>  valid_i,
