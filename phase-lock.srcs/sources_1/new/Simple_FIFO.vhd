@@ -21,8 +21,8 @@ end Simple_FIFO;
 
 architecture Behavioral of Simple_FIFO is
 
-constant BUF_SIZE   :   integer :=  4;
-constant BUF_LENGTH :   integer :=  2;
+constant BUF_SIZE   :   integer :=  512;
+constant BUF_LENGTH :   integer :=  8;
 
 subtype t_adc_data is std_logic_vector(DATA_WIDTH-1 downto 0);
 type t_adc_fifo is array(integer range 0 to BUF_SIZE-1) of t_adc_data;

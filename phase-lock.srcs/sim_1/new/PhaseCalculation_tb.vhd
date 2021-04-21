@@ -22,6 +22,8 @@ component PhaseCalculation is
         reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
         
+        iq_o            :   out t_iq_data;          --Output I/Q data
+        
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
     );
@@ -75,6 +77,8 @@ signal ddsValid_o   :   std_logic;
 signal mixPhase_slv     :   std_logic_vector(31 downto 0);
 signal dds_combined     :   std_logic_vector(31 downto 0);
 
+signal iqData       :   t_iq_data;
+
 begin
 
 clk_proc: process is
@@ -93,6 +97,7 @@ port map(
     freq_i      =>  freq_i,
     reg0        =>  reg0,
     regValid_i  =>  regValid_i,
+    iq_o        =>  iqData,
     phase_o     =>  phase_o,
     valid_o     =>  valid_o
 );
@@ -121,7 +126,7 @@ PORT MAP (
     m_axis_data_tvalid => ddsValid_o,
     m_axis_data_tdata => dds_o
 );
-adcData_i <= shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(1024,adcData_i'length);
+adcData_i <= shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(0,adcData_i'length);
 
 --test_data: process(clk,aresetn) is
 --begin
@@ -137,22 +142,24 @@ main_proc: process
 begin
     aresetn <= '0';
     freq_i <= to_unsigned(1073742,freq_i'length);
-    reg0 <= X"00" & X"0000" & X"0a";
+    reg0 <= X"00" & X"0000" & X"07";
     regValid_i <= '0';
 --    adcData_i <= to_signed(10,adcData_i'length);
-    ddsphase <= std_logic_vector(to_signed(0,ddsphase'length));
+    ddsphase <= std_logic_vector(to_signed(33554432/2,ddsphase'length));
     ddsphaseValid <= '0';
     wait for 200 ns;
     aresetn <= '1';
     wait for 100 ns;
     wait until rising_edge(clk);
     regValid_i <= '1';
+    ddsphaseValid <= '1';
     wait until rising_edge(clk);
     regValid_i <= '0';
+    ddsphaseValid <= '0';
     wait for 60 us;
     wait until rising_edge(clk);
-    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
-    ddsphaseValid <= '1';
+--    ddsphase <= std_logic_vector(to_signed(33554432,ddsphase'length));
+--    ddsphaseValid <= '1';
     wait until rising_edge(clk);
     ddsphaseValid <= '0';
     wait until rising_edge(clk);

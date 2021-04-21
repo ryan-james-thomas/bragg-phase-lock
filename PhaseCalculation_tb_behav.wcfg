@@ -13,15 +13,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="1000001fs"></ZoomEndTime>
-      <Cursor1Time time="69112fs"></Cursor1Time>
+      <ZoomStartTime time="64004430fs"></ZoomStartTime>
+      <ZoomEndTime time="67814431fs"></ZoomEndTime>
+      <Cursor1Time time="201000000fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="533"></NameColumnWidth>
-      <ValueColumnWidth column_width="219"></ValueColumnWidth>
+      <ValueColumnWidth column_width="211"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="28" />
+   <WVObjectSize size="24" />
    <wvobject fp_name="/PhaseCalculation_tb/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -36,37 +36,27 @@
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/freq_i" type="array">
-      <obj_property name="ElementShortName">freq_i[31:0]</obj_property>
-      <obj_property name="ObjectShortName">freq_i[31:0]</obj_property>
+      <obj_property name="ElementShortName">freq_i[26:0]</obj_property>
+      <obj_property name="ObjectShortName">freq_i[26:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseCalculation_tb/uut/dds_sin" type="array">
+      <obj_property name="ElementShortName">dds_sin[9:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_sin[9:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/PhaseCalculation_tb/uut/dds_cos" type="array">
+      <obj_property name="ElementShortName">dds_cos[9:0]</obj_property>
+      <obj_property name="ObjectShortName">dds_cos[9:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/reg0" type="array">
       <obj_property name="ElementShortName">reg0[31:0]</obj_property>
       <obj_property name="ObjectShortName">reg0[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/mem_bus" type="array">
-      <obj_property name="ElementShortName">mem_bus</obj_property>
-      <obj_property name="ObjectShortName">mem_bus</obj_property>
-      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.m" type="array">
-         <obj_property name="ElementShortName">.m</obj_property>
-         <obj_property name="ObjectShortName">.m</obj_property>
-      </wvobject>
-      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.s" type="array">
-         <obj_property name="ElementShortName">.s</obj_property>
-         <obj_property name="ObjectShortName">.s</obj_property>
-      </wvobject>
-      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.m" type="array">
-         <obj_property name="ElementShortName">.m</obj_property>
-         <obj_property name="ObjectShortName">.m</obj_property>
-      </wvobject>
-      <wvobject fp_name="/PhaseCalculation_tb/mem_bus.s" type="array">
-         <obj_property name="ElementShortName">.s</obj_property>
-         <obj_property name="ObjectShortName">.s</obj_property>
-      </wvobject>
-   </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/phase_o" type="array">
-      <obj_property name="ElementShortName">phase_o[15:0]</obj_property>
-      <obj_property name="ObjectShortName">phase_o[15:0]</obj_property>
+      <obj_property name="ElementShortName">phase_o[31:0]</obj_property>
+      <obj_property name="ObjectShortName">phase_o[31:0]</obj_property>
       <obj_property name="CustomSignalColor">#FF0000</obj_property>
       <obj_property name="UseCustomSignalColor">true</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
@@ -76,13 +66,13 @@
       <obj_property name="ObjectShortName">valid_o</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/I" type="array">
-      <obj_property name="ElementShortName">I[27:0]</obj_property>
-      <obj_property name="ObjectShortName">I[27:0]</obj_property>
+      <obj_property name="ElementShortName">I[23:0]</obj_property>
+      <obj_property name="ObjectShortName">I[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/Q" type="array">
-      <obj_property name="ElementShortName">Q[27:0]</obj_property>
-      <obj_property name="ObjectShortName">Q[27:0]</obj_property>
+      <obj_property name="ElementShortName">Q[23:0]</obj_property>
+      <obj_property name="ObjectShortName">Q[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/cicRate" type="array">
@@ -94,23 +84,23 @@
       <obj_property name="ObjectShortName">cicConfig_i[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/cicI_i" type="array">
-      <obj_property name="ElementShortName">cicI_i[15:0]</obj_property>
-      <obj_property name="ObjectShortName">cicI_i[15:0]</obj_property>
+      <obj_property name="ElementShortName">cicI_i[23:0]</obj_property>
+      <obj_property name="ObjectShortName">cicI_i[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/cicQ_i" type="array">
-      <obj_property name="ElementShortName">cicQ_i[15:0]</obj_property>
-      <obj_property name="ObjectShortName">cicQ_i[15:0]</obj_property>
+      <obj_property name="ElementShortName">cicQ_i[23:0]</obj_property>
+      <obj_property name="ObjectShortName">cicQ_i[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/cicI_o" type="array">
-      <obj_property name="ElementShortName">cicI_o[47:0]</obj_property>
-      <obj_property name="ObjectShortName">cicI_o[47:0]</obj_property>
+      <obj_property name="ElementShortName">cicI_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">cicI_o[55:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/cicQ_o" type="array">
-      <obj_property name="ElementShortName">cicQ_o[47:0]</obj_property>
-      <obj_property name="ObjectShortName">cicQ_o[47:0]</obj_property>
+      <obj_property name="ElementShortName">cicQ_o[55:0]</obj_property>
+      <obj_property name="ObjectShortName">cicQ_o[55:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/validIcic" type="logic">
@@ -122,36 +112,18 @@
       <obj_property name="ObjectShortName">validQcic</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/Iphase_i" type="array">
-      <obj_property name="ElementShortName">Iphase_i[15:0]</obj_property>
-      <obj_property name="ObjectShortName">Iphase_i[15:0]</obj_property>
+      <obj_property name="ElementShortName">Iphase_i[23:0]</obj_property>
+      <obj_property name="ObjectShortName">Iphase_i[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/Qphase_i" type="array">
-      <obj_property name="ElementShortName">Qphase_i[15:0]</obj_property>
-      <obj_property name="ObjectShortName">Qphase_i[15:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/uut/dds_sin" type="array">
-      <obj_property name="ElementShortName">dds_sin[13:0]</obj_property>
-      <obj_property name="ObjectShortName">dds_sin[13:0]</obj_property>
-      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/uut/dds_cos" type="array">
-      <obj_property name="ElementShortName">dds_cos[13:0]</obj_property>
-      <obj_property name="ObjectShortName">dds_cos[13:0]</obj_property>
+      <obj_property name="ElementShortName">Qphase_i[23:0]</obj_property>
+      <obj_property name="ObjectShortName">Qphase_i[23:0]</obj_property>
       <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/uut/regValid_i" type="logic">
       <obj_property name="ElementShortName">regValid_i</obj_property>
       <obj_property name="ObjectShortName">regValid_i</obj_property>
-   </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/uut/cicI_test" type="array">
-      <obj_property name="ElementShortName">cicI_test[47:0]</obj_property>
-      <obj_property name="ObjectShortName">cicI_test[47:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/uut/cicQ_test" type="array">
-      <obj_property name="ElementShortName">cicQ_test[47:0]</obj_property>
-      <obj_property name="ObjectShortName">cicQ_test[47:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/PhaseCalculation_tb/ddsphase" type="array">
       <obj_property name="ElementShortName">ddsphase[31:0]</obj_property>
@@ -160,9 +132,5 @@
    <wvobject fp_name="/PhaseCalculation_tb/ddsphaseValid" type="logic">
       <obj_property name="ElementShortName">ddsphaseValid</obj_property>
       <obj_property name="ObjectShortName">ddsphaseValid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/PhaseCalculation_tb/uut/cicValid" type="logic">
-      <obj_property name="ElementShortName">cicValid</obj_property>
-      <obj_property name="ObjectShortName">cicValid</obj_property>
    </wvobject>
 </wave_config>

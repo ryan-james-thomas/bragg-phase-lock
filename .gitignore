@@ -10,3 +10,4 @@ phase-lock.srcs/sources_1/ip/*/*
 *.asv
 
 data/
+.vscode/
