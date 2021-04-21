@@ -26,7 +26,7 @@ int main(int argc, char **argv)
   void *cfg;		//A pointer to a memory location.  The * indicates that it is a pointer - it points to a location in memory
   char *name = "/dev/mem";	//Name of the memory resource
 
-  uint32_t i = 0;
+  uint32_t i, incr = 0;
   uint8_t saveType = 0;
   uint8_t saveStreams = 0;
   uint32_t tmp;
@@ -98,20 +98,21 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
   
   if (saveType != 2) {
     for (i = 0;i<dataSize;i += saveFactor) {
+      incr = 0;
       if (saveStreams & 0b1) {
-        *(data + i) = *((uint32_t *)(cfg + DATA_LOC1));
+        *(data + i + incr++) = *((uint32_t *)(cfg + DATA_LOC1));
       }
       if (saveStreams & 0b10) {
-        *(data + i + 1) = *((uint32_t *)(cfg + DATA_LOC2));
+        *(data + i + incr++) = *((uint32_t *)(cfg + DATA_LOC2));
       }
       if (saveStreams & 0b100) {
-        *(data + i + 2) = *((uint32_t *)(cfg + DATA_LOC3));
+        *(data + i + incr++) = *((uint32_t *)(cfg + DATA_LOC3));
       }
       if (saveStreams & 0b1000) {
-        *(data + i + 3) = *((uint32_t *)(cfg + DATA_LOC4));
+        *(data + i + incr++) = *((uint32_t *)(cfg + DATA_LOC4));
       }
       if (saveStreams & 0b10000) {
-        *(data + i + 4) = *((uint32_t *)(cfg + DATA_LOC5));
+        *(data + i + incr++) = *((uint32_t *)(cfg + DATA_LOC5));
       }
     }
   } else {

@@ -40,8 +40,8 @@ COMPONENT MultMixer
   PORT (
     CLK : IN STD_LOGIC;
     A : IN STD_LOGIC_VECTOR(13 DOWNTO 0);
-    B : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-    P : OUT STD_LOGIC_VECTOR(29 DOWNTO 0)
+    B : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
+    P : OUT STD_LOGIC_VECTOR(23 DOWNTO 0)
   );
 END COMPONENT;
 
@@ -52,10 +52,10 @@ COMPONENT CIC_Decimate
     s_axis_config_tdata : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     s_axis_config_tvalid : IN STD_LOGIC;
     s_axis_config_tready : OUT STD_LOGIC;
-    s_axis_data_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    s_axis_data_tdata : IN STD_LOGIC_VECTOR(23 DOWNTO 0);
     s_axis_data_tvalid : IN STD_LOGIC;
     s_axis_data_tready : OUT STD_LOGIC;
-    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(63 DOWNTO 0);
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(55 DOWNTO 0);
     m_axis_data_tvalid : OUT STD_LOGIC
   );
 END COMPONENT;
@@ -90,9 +90,9 @@ end component;
 --
 signal mixPhase_slv     :   std_logic_vector(31 downto 0);
 signal dds_combined     :   std_logic_vector(31 downto 0);
-signal dds_sin          :   std_logic_vector(15 downto 0);
-signal dds_cos          :   std_logic_vector(15 downto 0);
-signal I, Q             :   std_logic_vector(29 downto 0);
+signal dds_sin          :   std_logic_vector(9 downto 0);
+signal dds_cos          :   std_logic_vector(9 downto 0);
+signal I, Q             :   std_logic_vector(23 downto 0);
 signal scaleFactor      :   unsigned(3 downto 0);
 
 --
@@ -100,9 +100,9 @@ signal scaleFactor      :   unsigned(3 downto 0);
 --
 signal cicRate              :   unsigned(7 downto 0);
 signal cicConfig_i          :   std_logic_vector(15 downto 0);
-signal cicI_i, cicQ_i       :   std_logic_vector(31 downto 0);
+signal cicI_i, cicQ_i       :   std_logic_vector(23 downto 0);
 
-signal cicI_o, cicQ_o       :   std_logic_vector(63 downto 0);
+signal cicI_o, cicQ_o       :   std_logic_vector(55 downto 0);
 signal validIcic, validQcic :   std_logic;
 
 signal Iphase_i, Qphase_i   :   std_logic_vector(23 downto 0);
@@ -141,8 +141,8 @@ port map(
 --
 -- Multiply the input signal with the I and Q mixing signals
 --
-dds_cos <= std_logic_vector(shift_left(resize(signed(dds_combined(15 downto 0)),dds_cos'length),6));
-dds_sin <= std_logic_vector(shift_left(resize(signed(dds_combined(31 downto 16)),dds_sin'length),6));
+dds_cos <= std_logic_vector(shift_left(resize(signed(dds_combined(15 downto 0)),dds_cos'length),0));
+dds_sin <= std_logic_vector(shift_left(resize(signed(dds_combined(31 downto 16)),dds_sin'length),0));
 
 I_Mixer: MultMixer
 port map(
@@ -200,8 +200,8 @@ port map(
 -- Compute phase via arctan
 --
 validPhase_i <= validQcic and validIcic;
-Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)+6),Iphase_i'length));
-Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)+6),Qphase_i'length));
+Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length));
+Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length));
 tdataPhase <= Qphase_i & Iphase_i;
 --iq_o <= (I => signed(Iphase_i), Q => signed(Qphase_i), valid => validPhase_i);
 iq_o <= (I => resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length),

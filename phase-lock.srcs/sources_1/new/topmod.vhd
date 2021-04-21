@@ -187,7 +187,7 @@ port map(
 -- Phase calculation
 --
 adc <= signed(adcData_i(adc'length-1 downto 0));
-df8 <= shift_left(df,to_integer(unsigned(topReg(7 downto 4))));
+--df8 <= shift_left(df,to_integer(unsigned(topReg(7 downto 4))));
 regPhaseValid <= triggers(0);
 PhaseCalc: PhaseCalculation
 port map(
@@ -315,6 +315,7 @@ begin
         triggers <= (others => '0');
         f0 <= to_unsigned(37580964,f0'length);  --35 MHz
         df <= to_unsigned(1073742,df'length);   --1 MHz
+        df8 <= to_unsigned(8*1073742,df8'length);
         phaseControlSig <= to_signed(0,phaseControlSig'length);
         regPhase <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
         regPhaseControl <= X"000000" & X"08";
@@ -360,6 +361,7 @@ begin
                         when X"000028" => fifoRead(bus_m,bus_s,comState,fifo_bus(2).m,fifo_bus(2).s);
                         when X"00002C" => fifoRead(bus_m,bus_s,comState,fifo_bus(3).m,fifo_bus(3).s);
                         when X"000030" => fifoRead(bus_m,bus_s,comState,fifo_bus(4).m,fifo_bus(4).s);
+                        when X"000034" => rw(bus_m,bus_s,comState,df8);
                         
                         when others => 
                             comState <= finishing;
