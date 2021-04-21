@@ -9,7 +9,7 @@ classdef PhaseLock < handle
         
         f0
         df
-        fmult
+        demod
         
         scaling
         cicRate
@@ -31,6 +31,7 @@ classdef PhaseLock < handle
         phaseControlSigReg
         phaseReg
         phaseControlReg
+        freqDemodReg
         
         sampleReg
     end
@@ -56,6 +57,7 @@ classdef PhaseLock < handle
             self.phaseControlSigReg = PhaseLockRegister('10',self.conn);
             self.phaseReg = PhaseLockRegister('14',self.conn);
             self.phaseControlReg = PhaseLockRegister('18',self.conn);
+            self.freqDemodReg = PhaseLockRegister('34',self.conn);
             
             % Read-only registers
             self.sampleReg = PhaseLockRegister('01000000',self.conn);
@@ -90,9 +92,9 @@ classdef PhaseLock < handle
             self.memSaveType = PhaseLockParameter([0,3],self.topReg)...
                 .setLimits('lower',0,'upper',15)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.fmult = PhaseLockParameter([4,7],self.topReg)...
-                .setLimits('lower',0,'upper',15)...
-                .setFunctions('to',@(x) x,'from',@(x) x);
+            self.demod = PhaseLockParameter([0,26],self.freqDemodReg)...
+                .setLimits('lower',0,'upper',50)...
+                .setFunctions('to',@(x) x*1e6/self.CLK*2^27,'from',@(x) x/2^27*self.CLK/1e6);
             %Read-only
             self.samplesCollected = PhaseLockParameter([0,12],self.sampleReg)...
                 .setLimits('lower',0,'upper',2^13)...
@@ -110,7 +112,7 @@ classdef PhaseLock < handle
             self.polarity.set(0);
             self.divscale.set(2);
             self.memSaveType.set(0);
-            self.fmult.set(3);
+            self.demod.set(0);
             self.samplesCollected.set(0);
 
         end
@@ -127,6 +129,7 @@ classdef PhaseLock < handle
             self.phaseReg.write;
             self.phaseControlReg.write;
             self.topReg.write;
+            self.freqDemodReg.write;
             self.updateCIC;
         end
         
@@ -138,6 +141,7 @@ classdef PhaseLock < handle
             self.phaseReg.read;
             self.phaseControlReg.read;
             self.topReg.read;
+            self.freqDemodReg.read;
             
             %Read parameters
             self.f0.get;
@@ -150,7 +154,7 @@ classdef PhaseLock < handle
             self.polarity.get;
             self.divscale.get;
             self.memSaveType.get;
-            self.fmult.get;
+            self.demod.get;
             %Get number of collected samples
             self.samplesCollected.read;
             
@@ -206,6 +210,7 @@ classdef PhaseLock < handle
             fprintf(1,'\t Frequency Parameters\n');
             fprintf(1,'\t\t  Center Frequency [MHz]: %.3f\n',self.f0.value);
             fprintf(1,'\t\t   Difference Freq [MHz]: %.3f\n',self.df.value);
+            fprintf(1,'\t\t        Demod Freq [MHz]: %.3f\n',self.demod.value);
             fprintf(1,'\t\t         CIC Rate (log2): %d\n',self.cicRate.value);
             fprintf(1,'\t\t  CIC pre-scaling (log2): %d\n',self.scaling.value);
             fprintf(1,'\t\t    Phase Control Signal: %.3f\n',self.phasec.value);
@@ -213,7 +218,7 @@ classdef PhaseLock < handle
             fprintf(1,'\t\t                Polarity: %d\n',self.polarity.value);
             fprintf(1,'\t\t    Phase Actuator Scale: %d\n',self.divscale.value);
             fprintf(1,'\t\t        Memory Save Type: %d\n',self.memSaveType.value);
-            fprintf(1,'\t\t    Difference Freq Mult: %d\n',self.fmult.value);
+            
         end
         
         
