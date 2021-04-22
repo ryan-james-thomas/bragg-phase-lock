@@ -85,6 +85,7 @@ component PhaseControl is
         aresetn     :   in  std_logic;
 
         reg0        :   in  t_param_reg;
+        gains       :   in  t_param_reg;
 
         phase_i     :   in  t_phase;
         valid_i     :   in  std_logic;
@@ -122,7 +123,7 @@ signal triggers :   t_param_reg         :=  (others => '0');
 --
 -- DDS parameters
 --
-signal f0, df,df8   :   t_dds_phase     :=  (others => '0');
+signal f0, df,dfmod :   t_dds_phase     :=  (others => '0');
 signal pow          :   t_dds_phase     :=  (others => '0');
 signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
 
@@ -132,7 +133,7 @@ signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
 signal adc          :   t_adc       :=  (others => '0');
 signal phase        :   t_phase     :=  (others => '0');
 signal phaseValid   :   std_logic   :=  '0';
-signal regPhase     :   t_param_reg :=  (others => '0');
+signal regPhaseCalc :   t_param_reg :=  (others => '0');
 signal regPhaseValid:   std_logic   :=  '0';
 
 signal iqData       :   t_iq_data   :=  INIT_IQ_DATA;
@@ -141,6 +142,7 @@ signal iqData       :   t_iq_data   :=  INIT_IQ_DATA;
 -- Phase control signals
 --
 signal regPhaseControl  :   t_param_reg;
+signal regControlGains  :   t_param_reg;
 signal phaseControlSig  :   t_phase;
 signal powControl       :   t_dds_phase;
 signal powControlValid  :   std_logic;
@@ -192,7 +194,6 @@ port map(
 -- Phase calculation
 --
 adc <= signed(adcData_i(adc'length-1 downto 0));
---df8 <= shift_left(df,to_integer(unsigned(topReg(7 downto 4))));
 RegPhaseValid_Sync: process(adcclk,aresetn) is
 begin
     if aresetn = '0' then
@@ -211,8 +212,8 @@ port map(
     clk         =>  adcclk,
     aresetn     =>  aresetn,
     adcData_i   =>  adc,
-    freq_i      =>  df8,
-    reg0        =>  regPhase,
+    freq_i      =>  dfmod,
+    reg0        =>  regPhaseCalc,
     regValid_i  =>  regPhaseValid,
     iq_o        =>  iqData,
     phase_o     =>  phase,
@@ -227,6 +228,7 @@ port map(
     clk         =>  adcclk,
     aresetn     =>  aresetn,
     reg0        =>  regPhaseControl,
+    gains       =>  regControlGains,
     phase_i     =>  phase,
     valid_i     =>  phaseValid,
     phase_c     =>  phaseControlSig,
@@ -310,10 +312,11 @@ begin
         triggers <= (others => '0');
         f0 <= to_unsigned(37580964,f0'length);  --35 MHz
         df <= to_unsigned(1073742,df'length);   --1 MHz
-        df8 <= to_unsigned(8*1073742,df8'length);
+        dfmod <= to_unsigned(8*1073742,dfmod'length);
         phaseControlSig <= to_signed(0,phaseControlSig'length);
-        regPhase <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
+        regPhaseCalc <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
         regPhaseControl <= X"000000" & X"08";
+        regControlGains <= (others => '0');
         phaseControlSig <= (others => '0');
         topReg <= (others => '0');
         fifoReg <= (others => '0');
@@ -347,16 +350,20 @@ begin
                         when X"000004" => rw(bus_m,bus_s,comState,topReg);
                         when X"000008" => rw(bus_m,bus_s,comState,f0);
                         when X"00000C" => rw(bus_m,bus_s,comState,df);
-                        when X"000010" => rw(bus_m,bus_s,comState,phaseControlSig);
-                        when X"000014" => rw(bus_m,bus_s,comState,regPhase);
-                        when X"000018" => rw(bus_m,bus_s,comState,regPhaseControl);
-                        when X"00001C" => rw(bus_m,bus_s,comState,fifoReg);
-                        when X"000020" => fifoRead(bus_m,bus_s,comState,fifo_bus(0).m,fifo_bus(0).s);
-                        when X"000024" => fifoRead(bus_m,bus_s,comState,fifo_bus(1).m,fifo_bus(1).s);
-                        when X"000028" => fifoRead(bus_m,bus_s,comState,fifo_bus(2).m,fifo_bus(2).s);
-                        when X"00002C" => fifoRead(bus_m,bus_s,comState,fifo_bus(3).m,fifo_bus(3).s);
-                        when X"000030" => fifoRead(bus_m,bus_s,comState,fifo_bus(4).m,fifo_bus(4).s);
-                        when X"000034" => rw(bus_m,bus_s,comState,df8);
+                        when X"000010" => rw(bus_m,bus_s,comState,dfmod);
+                        when X"000014" => rw(bus_m,bus_s,comState,phaseControlSig);
+                        when X"000018" => rw(bus_m,bus_s,comState,regPhaseCalc);
+                        when X"00001C" => rw(bus_m,bus_s,comState,regPhaseControl);
+                        when X"000020" => rw(bus_m,bus_s,comState,regControlGains);
+                        --
+                        -- FIFO control and data retrieval
+                        --
+                        when X"000024" => rw(bus_m,bus_s,comState,fifoReg);
+                        when X"000028" => fifoRead(bus_m,bus_s,comState,fifo_bus(0).m,fifo_bus(0).s);
+                        when X"00002C" => fifoRead(bus_m,bus_s,comState,fifo_bus(1).m,fifo_bus(1).s);
+                        when X"000030" => fifoRead(bus_m,bus_s,comState,fifo_bus(2).m,fifo_bus(2).s);
+                        when X"000034" => fifoRead(bus_m,bus_s,comState,fifo_bus(3).m,fifo_bus(3).s);
+                        when X"000038" => fifoRead(bus_m,bus_s,comState,fifo_bus(4).m,fifo_bus(4).s);
                         
                         when others => 
                             comState <= finishing;

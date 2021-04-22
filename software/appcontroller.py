@@ -28,7 +28,7 @@ def write(data,header):
         print("Command: ",cmd)
     result = subprocess.run(cmd,stdout=subprocess.PIPE)
     if result.returncode != 0:
-        response = {"err":True,"errMsg":"Bus error"}
+        response = {"err":True,"errMsg":"Bus error","data":[]}
     else:
         response = {"err":False,"errMsg":""}
         if len(result.stdout) > 0:

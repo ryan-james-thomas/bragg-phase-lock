@@ -11,6 +11,7 @@ entity PhaseControl is
         aresetn     :   in  std_logic;
 
         reg0        :   in  t_param_reg;
+        gains       :   in  t_param_reg;
 
         phase_i     :   in  t_phase;
         valid_i     :   in  std_logic;
@@ -24,7 +25,32 @@ end PhaseControl;
 
 architecture Behavioural of PhaseControl is
 
-subtype t_phase_local is signed(40 downto 0);
+component PIController is
+    port(
+        --
+        -- Clocking and reset
+        --
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+        --
+        -- Inputs
+        --
+        meas_i      :   in  t_phase;
+        control_i   :   in  t_phase;
+        valid_i     :   in  std_logic;
+        --
+        -- Parameters
+        --
+        gains       :   in  t_param_reg;
+        params      :   in  t_param_reg;
+        --
+        -- Outputs
+        --
+        valid_o     :   out std_logic;
+        data_o      :   out t_dds_phase;
+        act_o       :   out unsigned(CORDIC_WIDTH-1 downto 0)
+    );
+end component;
 
 signal polarity     :   std_logic;
 signal enable       :   std_logic;
@@ -35,27 +61,39 @@ signal phaseDiff            :   t_phase;
 signal phaseSum             :   t_phase;
 constant PHASE_POS_PI       :   t_phase     :=  to_signed(65535,phaseSum'length);
 
-signal err, control, act    :   t_phase;
-
-signal actScale             :   signed(CORDIC_WIDTH-1 downto 0);
-signal act2pi               :   unsigned(CORDIC_WIDTH-1 downto 0);
-constant PHASE_2PI          :   unsigned(CORDIC_WIDTH-1 downto 0)   :=  shift_left(to_unsigned(1,CORDIC_WIDTH),CORDIC_WIDTH-2);
-
-signal dds_phase_corr, dds_phase       :   t_dds_phase;
-
 signal validWrap            :   std_logic;
+signal validPI             :   std_logic;
+
+signal pi_o     :   t_phase;
 
 type t_status_local is (idle,wrapping,summing,output);
 signal state    :   t_status_local  :=  idle;
 
+signal dds_phase    :   t_dds_phase;
+
 begin
 
+PI: PIController
+port map(
+    clk         =>  clk,
+    aresetn     =>  aresetn,
+    meas_i      =>  phaseSum,
+    control_i   =>  phase_c,
+    valid_i     =>  validWrap,
+    gains       =>  gains,
+    params      =>  reg0,
+    valid_o     =>  validPI,
+    data_o      =>  dds_phase,
+    act_o       =>  act_phase_o
+);
+
+dds_phase_o <= dds_phase when enable = '1' else resizePhase(phase_c);
+valid_o <= validPI when enable = '1' else validWrap;
 --
 -- Unwrap phase
 --
 polarity <= reg0(0);
 enable <= reg0(1);
-divPower <= unsigned(reg0(5 downto 2));
 
 PhaseWrap: process(clk,aresetn) is
 begin
@@ -65,12 +103,10 @@ begin
         phaseOld <= (others => '0');
         phaseSum <= (others => '0');
         state <= idle;
-        dds_phase <= (others => '0');
-        valid_o <= '0';
     elsif rising_edge(clk) then
         PhaseCase: case(state) is
             when idle =>
-                valid_o <= '0';
+                validWrap <= '0';
                 if valid_i = '1' then
                     phaseOld <= phaseNew;
                     phaseNew <= resize(phase_i,phaseNew'length);
@@ -88,36 +124,19 @@ begin
                 end if;
                 
             when summing =>
-                state <= output;
+                state <= idle;
+                validWrap <= '1';
                 if enable = '1' then
                     phaseSum <= phaseSum + phaseDiff;
-                    validWrap <= '1';
                 elsif enable = '0' then
                     phaseSum <= (others => '0');
                 end if;
-                
-            when output =>
-                valid_o <= '1';
-                state <= idle;
-                if enable = '1' then
-                    dds_phase <= dds_phase + dds_phase_corr;
-                else
-                    dds_phase <= dds_phase_corr;
-                end if;
+            
+            when others => null;
         
         end case;
     end if;
 end process;
 
-
-err <= phase_c - phaseSum when polarity = '0' else phaseSum - phase_c;
-act <= shift_right(err,to_integer(divPower));
-
-actScale <= resize(act,CORDIC_WIDTH);
-act2pi <= unsigned(actScale) when actScale > 0 else PHASE_2PI - unsigned(abs(actScale));
-dds_phase_corr <=  shift_left(resize(act2pi,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3);
-
-dds_phase_o <= dds_phase;
-act_phase_o <= act2pi;
 
 end Behavioural;

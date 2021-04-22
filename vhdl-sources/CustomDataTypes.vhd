@@ -145,11 +145,30 @@ type t_iq_data is record
 end record t_iq_data;
 
 constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (others => '0'), valid => '0');
+
+
+function resizePhase ( ARG: signed) return t_dds_phase;
                                                      
 end CustomDataTypes;
 
 --------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------
 package body CustomDataTypes is
+
+function resizePhase ( ARG: signed) return t_dds_phase is
+    constant PHASE_2PI  :   unsigned(CORDIC_WIDTH-1 downto 0)   :=  shift_left(to_unsigned(1,CORDIC_WIDTH),CORDIC_WIDTH-2);
+    variable actScale   :   signed(CORDIC_WIDTH-1 downto 0);
+    variable act2pi     :   unsigned(CORDIC_WIDTH-1 downto 0);
+    variable RESULT     :   t_dds_phase                         := (others => '0');
+begin
+    actScale := resize(ARG,CORDIC_WIDTH);
+    if actScale > 0 then
+        act2pi := unsigned(actScale);
+    else
+        act2pi := PHASE_2PI - unsigned(abs(actScale));
+    end if;
+    RESULT := shift_left(resize(act2pi,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3);
+    return RESULT;
+end resizePhase;
 
 end CustomDataTypes;

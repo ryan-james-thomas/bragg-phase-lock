@@ -17,12 +17,14 @@ component PhaseControl is
         aresetn     :   in  std_logic;
 
         reg0        :   in  t_param_reg;
+        gains       :   in  t_param_reg;
 
         phase_i     :   in  t_phase;
         valid_i     :   in  std_logic;
         phase_c     :   in  t_phase;
 
         dds_phase_o :   out t_dds_phase;
+        act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
         valid_o     :   out std_logic
     );
 end component;
@@ -30,7 +32,7 @@ end component;
 constant CLK_T      :   time    :=  10 ns;
 signal clk, aresetn :   std_logic;
 
-signal reg0 :   t_param_reg;
+signal reg0, gains :   t_param_reg;
 signal phase_i, phase_c :   t_phase;
 signal valid_i, valid_o :   std_logic;
 signal dds_phase_o  :   t_dds_phase;
@@ -55,6 +57,7 @@ port map(
     clk         =>  clk,
     aresetn     =>  aresetn,
     reg0        =>  reg0,
+    gains       =>  gains,
     phase_i     =>  phase_i,
     valid_i     =>  valid_i,
     phase_c     =>  phase_c,
@@ -96,6 +99,7 @@ begin
     reg0(31 downto 6) <= (others => '0');
     reg0(5 downto 2) <= X"2";
     reg0(1 downto 0) <= "00";
+    gains <= X"02" & X"00" & X"01" & X"01";
 --    phase_i <= (others => '0');
     phase_c <= (others => '0');
     wait for 200 ns;
