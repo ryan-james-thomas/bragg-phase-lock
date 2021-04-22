@@ -15,8 +15,10 @@ constant NASLV : std_logic_vector(0 downto 1) := (others => '0');
 --
 -- Defines AXI address and data widths
 --
-constant AXI_ADDR_WIDTH :   natural :=  32;
-constant AXI_DATA_WIDTH :   natural :=  32;
+constant AXI_ADDR_WIDTH     :   natural :=  32;
+constant AXI_DATA_WIDTH     :   natural :=  32;
+constant AXI_MASTER_WIDTH   :   natural :=  AXI_DATA_WIDTH + AXI_ADDR_WIDTH + 2;
+constant AXI_SLAVE_WIDTH    :   natural :=  AXI_DATA_WIDTH + 2;
 
 --
 -- Defines AXI address and data signals
@@ -60,6 +62,15 @@ constant INIT_AXI_BUS_SLAVE     :   t_axi_bus_slave     :=  (data   =>  (others 
 constant INIT_AXI_BUS           :   t_axi_bus           :=  (m      =>  INIT_AXI_BUS_MASTER,
                                                              s      =>  INIT_AXI_BUS_SLAVE);
 
+--
+-- Conversion functions for AXI buses
+--
+function axi_master_to_slv(bus_m: t_axi_bus_master) return std_logic_vector;
+function slv_to_axi_master(slv: std_logic_vector) return t_axi_bus_master;
+function axi_slave_to_slv(bus_s: t_axi_bus_slave) return std_logic_vector;
+function slv_to_axi_slave(slv: std_logic_vector) return t_axi_bus_slave;
+
+                                                             
 function resize ( ARG: std_logic_vector; NEW_SIZE: NATURAL) return std_logic_vector;
 
 procedure rw(
@@ -112,6 +123,41 @@ end AXI_Bus_Package;
 --------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------
 package body AXI_Bus_Package is
+
+--
+-- AXI bus conversion functions
+--
+function axi_master_to_slv(bus_m: t_axi_bus_master) return std_logic_vector is
+    variable result : std_logic_vector(AXI_ADDR_WIDTH + AXI_DATA_WIDTH + 2 - 1 downto 0);
+begin
+    result := std_logic_vector(bus_m.addr) & bus_m.data & bus_m.valid;
+    return result;
+end axi_master_to_slv;
+
+function slv_to_axi_master(slv: std_logic_vector) return t_axi_bus_master is
+    variable result :   t_axi_bus_master;
+begin
+    result.valid    :=  slv(1 downto 0);
+    result.data     :=  slv(AXI_DATA_WIDTH + 2 - 1 downto 2);
+    result.addr     :=  unsigned(slv(AXI_ADDR_WIDTH + AXI_DATA_WIDTH + 2 - 1 downto AXI_DATA_WIDTH + 2));
+    return result; 
+end slv_to_axi_master;
+
+function axi_slave_to_slv(bus_s: t_axi_bus_slave) return std_logic_vector is
+    variable result : std_logic_vector(AXI_DATA_WIDTH + 2 - 1 downto 0);
+begin
+    result := bus_s.data & bus_s.resp;
+    return result;
+end axi_slave_to_slv;
+
+function slv_to_axi_slave(slv: std_logic_vector) return t_axi_bus_slave is
+    variable result :   t_axi_bus_slave;
+begin
+    result.resp     :=  slv(1 downto 0);
+    result.data     :=  slv(AXI_DATA_WIDTH + 2 - 1 downto 2);
+    return result; 
+end slv_to_axi_slave;
+
 
 function resize ( ARG: std_logic_vector; NEW_SIZE: NATURAL) return std_logic_vector is
     constant ARG_LEFT:INTEGER:= ARG'length-1;
