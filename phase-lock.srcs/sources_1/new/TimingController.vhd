@@ -37,6 +37,9 @@ signal state    :   t_status_local  :=  idle;
 
 begin
 
+--
+-- Store timing data in a block RAM
+--
 StoreTimingData: BlockMemHandlerRAM
 port map(
     clk         =>  clk,
@@ -46,7 +49,9 @@ port map(
     bus_s       =>  mem_bus.s
 );
 
-
+--
+-- Main delay generator
+--
 TimingProc: process(clk,aresetn) is
 begin
     if aresetn = '0' then
@@ -56,6 +61,11 @@ begin
 
     elsif rising_edge(clk) then
         FSM: case (state) is
+            --
+            -- Wait for either memory bus trigger or start trigger.
+            -- Memory bus trigger initiates pre-loading of first data words
+            -- Start trigger starts going through stored data
+            --
             when idle =>
                 if bus_m_i.trig = '1' then
                     state <= preload_reading;
