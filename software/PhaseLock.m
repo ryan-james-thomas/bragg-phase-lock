@@ -39,6 +39,8 @@ classdef PhaseLock < handle
     properties(Constant)
         CLK = 125e6;
         HOST_ADDRESS = '172.22.250.94';
+        DDS_WIDTH = 27;
+        CORDIC_WIDTH = 24;
     end
     
     methods
@@ -65,19 +67,19 @@ classdef PhaseLock < handle
             %Frequency generation
             self.f0 = PhaseLockParameter([0,26],self.freqOffsetReg)...
                 .setLimits('lower',0,'upper',50)...
-                .setFunctions('to',@(x) x*1e6/self.CLK*2^27,'from',@(x) x/2^27*self.CLK/1e6);
+                .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
             self.df = PhaseLockParameter([0,26],self.freqDiffReg)...
                 .setLimits('lower',0,'upper',50)...
-                .setFunctions('to',@(x) x*1e6/self.CLK*2^27,'from',@(x) x/2^27*self.CLK/1e6);
+                .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
             self.cicRate = PhaseLockParameter([0,7],self.phaseReg)...
                 .setLimits('lower',7,'upper',11)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
             self.scaling = PhaseLockParameter([8,11],self.phaseReg)...
                 .setLimits('lower',0,'upper',15)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.phasec = PhaseLockParameter([0,23],self.phaseControlSigReg)...
+            self.phasec = PhaseLockParameter([0,31],self.phaseControlSigReg)...
                 .setLimits('lower',-pi,'upper',pi)...
-                .setFunctions('to',@(x) typecast(int16(x/pi*2^13),'uint16'),'from',@(x) x/2^13*pi);
+                .setFunctions('to',@(x) typecast(int32(x/pi*2^(self.CORDIC_WIDTH-3)),'uint32'),'from',@(x) x/2^(self.CORDIC_WIDTH-3)*pi);
             
             self.polarity = PhaseLockParameter([0,0],self.phaseControlReg)...
                 .setLimits('lower',0,'upper',1)...
@@ -94,7 +96,7 @@ classdef PhaseLock < handle
                 .setFunctions('to',@(x) x,'from',@(x) x);
             self.demod = PhaseLockParameter([0,26],self.freqDemodReg)...
                 .setLimits('lower',0,'upper',50)...
-                .setFunctions('to',@(x) x*1e6/self.CLK*2^27,'from',@(x) x/2^27*self.CLK/1e6);
+                .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
             %Read-only
             self.samplesCollected = PhaseLockParameter([0,12],self.sampleReg)...
                 .setLimits('lower',0,'upper',2^13)...
@@ -288,15 +290,15 @@ classdef PhaseLock < handle
 %                         dd = reshape(typecast(d(:,1),'uint8'),4,numel(d(:,1)));
 %                         data.idx = double(dd(4,:));
 %                         dd(4,:) = uint8(0);
-                        data.ph = double(typecast(d(:,1),'int32'))/2^(24-3)*pi;
+                        data.ph = double(typecast(d(:,1),'int32'))/2^(PhaseLock.CORDIC_WIDTH-3)*pi;
                     end
                     if bits(2)
                         idx = sum(bits(1:2));
-                        data.act = unwrap(double(d(:,idx))/2^(24-3)*pi);
+                        data.act = unwrap(double(d(:,idx))/2^(PhaseLock.CORDIC_WIDTH-3)*pi);
                     end
                     if bits(3)
                         idx = sum(bits(1:3));   
-                        data.dds = unwrap(double(d(:,idx))/2^27*2*pi);
+                        data.dds = unwrap(double(d(:,idx))/2^PhaseLock.DDS_WIDTH*2*pi);
                     end
                     if bits(4)
                         idx = sum(bits(1:4));

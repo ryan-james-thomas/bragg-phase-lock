@@ -125,13 +125,13 @@ classdef PhaseLockClient < handle
     
     methods(Access = protected)       
         function processProtoHeader(self)
-            if self.client.BytesAvailable>=2
+            if self.client.BytesAvailable>=2 && self.client.BytesAvailable > 0
                 self.headerLength = fread(self.client,1,'uint16');
             end
         end
         
         function processHeader(self)
-            if self.client.BytesAvailable>=self.headerLength
+            if ~isempty(self.headerLength) && self.client.BytesAvailable>=self.headerLength && self.client.BytesAvailable > 0
                 tmp = fread(self.client,self.headerLength,'uint8');
                 self.header = jsondecode(char(tmp)');
                 if ~isfield(self.header,'length')
@@ -141,18 +141,7 @@ classdef PhaseLockClient < handle
         end
         
         function processMessage(self)
-            if self.bytesRead < self.header.length
-%                 if self.client.BytesAvailable == (2^16-1)
-%                     wordsToRead = 16000;
-%                 else
-%                     wordsToRead = min(floor(self.header.length/4),floor(self.client.BytesAvailable/4));
-%                 end
-%                 if self.client.BytesAvailable == (2^16-1)
-%                     bytesToRead = 64000;
-%                 else
-% %                     bytesToRead = min(floor(self.header.length),floor(self.client.BytesAvailable));
-%                     bytesToRead = self.client.BytesAvailable;
-%                 end
+            if self.bytesRead < self.header.length && self.client.BytesAvailable > 0
                 bytesToRead = self.client.BytesAvailable;
 %                 fprintf(1,'Bytes to read: %d\n',bytesToRead);
                 tmp = uint8(fread(self.client,bytesToRead,'uint8'));
@@ -166,21 +155,6 @@ classdef PhaseLockClient < handle
                 self.recvDone = true;
                 self.recvMessage = typecast(self.recvMessage,'uint32');
             end
-            
-%             if self.client.BytesAvailable>=self.header.length
-%                 self.recvMessage = read(self.client,round(self.header.length/4),'uint32');
-%                 self.bytesRead = self.header.length;
-%                 self.recvDone = true;
-%             elseif self.client.BytesAvailable == (2^16-1)
-%                 tmp = read(self.client,2^13,'uint32');
-%                 self.bytesRead = self.bytesRead + 4*numel(tmp);
-%                 self.recvMessage = [self.recvMessage tmp];
-%             elseif (self.client.BytesAvailable + self.bytesRead) >= self.header.length
-%                 tmp = read(self.client,round(self.client.BytesAvailable/4),'uint32');
-%                 self.bytesRead = self.bytesRead + 4*numel(tmp);
-%                 self.recvMessage = [self.recvMessage tmp];
-%                 self.recvDone = true;
-%             end
         end
     end
    
