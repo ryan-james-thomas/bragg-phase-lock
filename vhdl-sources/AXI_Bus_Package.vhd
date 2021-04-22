@@ -172,7 +172,7 @@ begin
     bus_o.resp <= "01";
     state <= finishing;
     if bus_i.valid(1) = '0' then
-        param <= unsigned(bus_i.data(param'length-1 downto 0));
+        param <= resize(unsigned(bus_i.data),param'length);
     else
         bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
@@ -187,7 +187,7 @@ begin
     bus_o.resp <= "01";
     state <= finishing;
     if bus_i.valid(1) = '0' then
-        param <= signed(bus_i.data(param'length-1 downto 0));
+        param <= resize(signed(bus_i.data),param'length);
     else
         bus_o.data <= resize(std_logic_vector(param),AXI_DATA_WIDTH);
     end if;
