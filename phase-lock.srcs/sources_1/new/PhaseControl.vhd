@@ -30,12 +30,12 @@ signal polarity     :   std_logic;
 signal enable       :   std_logic;
 signal divPower     :   unsigned(3 downto 0);
 
-signal phaseNew, phaseOld   :   t_phase_local;
-signal phaseDiff            :   t_phase_local;
-signal phaseSum             :   t_phase_local;
-constant PHASE_POS_PI       :   t_phase_local     :=  to_signed(65535,phaseSum'length);
+signal phaseNew, phaseOld   :   t_phase;
+signal phaseDiff            :   t_phase;
+signal phaseSum             :   t_phase;
+constant PHASE_POS_PI       :   t_phase     :=  to_signed(65535,phaseSum'length);
 
-signal err, control, act    :   t_phase_local;
+signal err, control, act    :   t_phase;
 
 signal actScale             :   signed(CORDIC_WIDTH-1 downto 0);
 signal act2pi               :   unsigned(CORDIC_WIDTH-1 downto 0);

@@ -110,25 +110,6 @@ component FIFOHandler is
     );
 end component;
 
---
--- Testing
---
-COMPONENT CIC_BigDecimation
-  PORT (
-    aclk : IN STD_LOGIC;
-    aresetn : IN STD_LOGIC;
-    s_axis_data_tdata : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-    s_axis_data_tvalid : IN STD_LOGIC;
-    s_axis_data_tready : OUT STD_LOGIC;
-    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(55 DOWNTO 0);
-    m_axis_data_tvalid : OUT STD_LOGIC
-  );
-END COMPONENT;
-
-constant CIC_SHIFT  :   natural :=  39;
-signal adcCICvalid_o, adcCICvalid_i  :   std_logic;
-signal adcCICdata   :   std_logic_vector(55 downto 0);
-signal adcCIC       :   signed(15 downto 0);
 
 --
 -- Communication signals
@@ -190,20 +171,6 @@ signal resetExtended:   std_logic;
 signal resetCount   :   unsigned(7 downto 0);
 
 begin
-
-CICBig: CIC_BigDecimation
-PORT MAP (
-    aclk                =>  clk,
-    aresetn             =>  aresetn,
-    s_axis_data_tdata   =>  adcData_i,
-    s_axis_data_tvalid  =>  '1',
-    s_axis_data_tready  =>  open,
-    m_axis_data_tdata   =>  adcCICdata,
-    m_axis_data_tvalid  =>  adcCICvalid_o
-);
-
-adcCIC <= resize(shift_right(signed(adcCICdata),CIC_SHIFT),adcCIC'length);
-
 
 --
 -- DDS output signals
@@ -267,27 +234,6 @@ port map(
     act_phase_o =>  actPhase,
     valid_o     =>  powControlValid
 );
-
-
---
--- Save data
---
---memSwitch <= topReg(3 downto 0);
---mem_bus.m.reset <= triggers(1); --This serves as a "start" trigger, and the memory will save data up to its size
---memData_i <=    std_logic_vector(resize(signed(adcData_i),memData_i'length)) when memSwitch = X"F" else
---                std_logic_vector(resize(phase,memData_i'length));
---memValid_i <=   '1' when memSwitch = X"F" else
---                phaseValid;      
-
---SaveData: BlockMemHandler
---port map(
---    clk         =>  clk,
---    aresetn     =>  aresetn,
---    data_i      =>  memData_i,
---    valid_i     =>  memValid_i,
---    bus_m       =>  mem_bus.m,
---    bus_s       =>  mem_bus.s
---);
                
 --
 -- FIFO buffering for long data sets
@@ -347,26 +293,6 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
         );
     end generate ABNORMAL_OP;
 end generate FIFO_GEN;
-
---DebugCountProc: process(clk,aresetn) is
---begin
---    if aresetn = '0' then
---        debugCount <= (others => '0');
---    elsif fifoValid(1) = '1' then
---        debugCount <= debugCount + X"1";
---    end if;
---end process;
-
---PhaseMeas_FIFO: FIFOHandler
---port map(
---    clk         =>  clk,
---    aresetn     =>  aresetn,
---    data_i      =>  fifoData(0),
---    valid_i     =>  fifoValid(0),
---    bus_m       =>  fifo_bus(0).m,
---    bus_s       =>  fifo_bus(0).s
---);
-
 
 --
 -- Parse AXI data
