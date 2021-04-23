@@ -263,7 +263,7 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
     fifo_bus(I).m.reset <= resetExtended;
     
     fifoValid(I) <= powControlValid and enableFIFO;
-    PhaseMeas_FIFO_NORMAL_X: FIFOHandler
+    PhaseMeas_FIFO_X: FIFOHandler
     port map(
 --            wr_clk      =>  adcclk,
 --            rd_clk      =>  sysclk,
