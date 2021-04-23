@@ -16,8 +16,6 @@ entity PhaseCalculation is
         reg0            :   in  t_param_reg;        --Bits [3,0]: log2(cicRate)
         regValid_i      :   in  std_logic;
         
-        iq_o            :   out t_iq_data;          --Output I/Q data
-        
         phase_o         :   out t_phase;            --Output phase
         valid_o         :   out std_logic           --Output phase valid signal
     );
@@ -204,9 +202,9 @@ Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRat
 Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length));
 tdataPhase <= Qphase_i & Iphase_i;
 --iq_o <= (I => signed(Iphase_i), Q => signed(Qphase_i), valid => validPhase_i);
-iq_o <= (I => resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length),
-         Q => resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length),
-         valid => validPhase_i);
+--iq_o <= (I => resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length),
+--         Q => resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length),
+--         valid => validPhase_i);
 MakePhase: PhaseCalc
 PORT MAP (
     aclk                    => clk,

@@ -286,15 +286,6 @@ classdef PhaseLock < handle
             for nn = 1:numStreams
                 d(:,nn) = typecast(uint8(reshape(raw((nn-1)*4+(1:4),:),4*size(d,1),1)),'uint32');
             end
-%                 
-%             
-%             mm = 1;
-%             for nn=1:(numStreams*4):numel(raw)
-%                 d(mm,1) = double(typecast(uint8(raw(nn+(0:3))),'int32'));
-%                 d(mm,2) = double(typecast(uint8(raw(nn+(4:7))),'uint32'));
-%                 d(mm,3) = double(typecast(uint8(raw(nn+(8:11))),'uint32'));
-%                 mm = mm+1;
-%             end
             
             switch lower(method)
                 case 'voltage'
@@ -304,13 +295,7 @@ classdef PhaseLock < handle
                     data.ph = [];
                     data.act = [];
                     data.dds = [];
-                    data.I = [];
-                    data.Q = [];
-%                     data.idx = [];
                     if bits(1)
-%                         dd = reshape(typecast(d(:,1),'uint8'),4,numel(d(:,1)));
-%                         data.idx = double(dd(4,:));
-%                         dd(4,:) = uint8(0);
                         data.ph = double(typecast(d(:,1),'int32'))/2^(PhaseLock.CORDIC_WIDTH-3)*pi;
                     end
                     if bits(2)
@@ -320,14 +305,6 @@ classdef PhaseLock < handle
                     if bits(3)
                         idx = sum(bits(1:3));   
                         data.dds = unwrap(double(d(:,idx))/2^PhaseLock.DDS_WIDTH*2*pi);
-                    end
-                    if bits(4)
-                        idx = sum(bits(1:4));
-                        data.I = double(typecast(d(:,idx),'int32'));
-                    end
-                    if bits(5)
-                        idx = sum(bits(1:5));
-                        data.Q = double(typecast(d(:,idx),'int32'));
                     end
                     varargout{1} = data;
                 otherwise
