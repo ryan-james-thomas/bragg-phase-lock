@@ -88,6 +88,7 @@ classdef PhaseLockClient < handle
                 msg = jsonencode(msg);
                 len = uint16(numel(msg));
 
+                data = data(:)';
                 msg_write = [typecast(len,'uint8'),uint8(msg),typecast(uint32(data),'uint8')];
                 fwrite(self.client,msg_write,'uint8');
                 

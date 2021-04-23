@@ -110,6 +110,19 @@ component FIFOHandler is
     );
 end component;
 
+component TimingController is
+    port(
+        clk         :   in  std_logic;
+        aresetn     :   in  std_logic;
+        reset       :   in  std_logic;
+
+        data_i      :   in  t_param_reg;
+        valid_i     :   in  std_logic;
+
+        start_i     :   in  std_logic;
+        data_o      :   out t_timing_control
+    );
+end component;
 
 --
 -- Communication signals
@@ -123,8 +136,14 @@ signal triggers :   t_param_reg         :=  (others => '0');
 -- DDS parameters
 --
 signal f0, df,dfmod :   t_dds_phase     :=  (others => '0');
+signal dfSet        :   t_dds_phase     :=  (others => '0');
+signal dfmodManual  :   t_dds_phase     :=  (others => '0');
+signal dfmod_i      :   t_dds_phase     :=  (others => '0');
 signal pow          :   t_dds_phase     :=  (others => '0');
 signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
+signal useSetDemod  :   std_logic;
+signal dfshift      :   unsigned(3 downto 0);
+signal useManual    :   std_logic;
 
 --
 -- Phase calculation signals
@@ -138,9 +157,11 @@ signal regPhaseValid:   std_logic   :=  '0';
 --
 -- Phase control signals
 --
+signal phaseControlManual   :   std_logic;
 signal regPhaseControl  :   t_param_reg;
 signal regControlGains  :   t_param_reg;
 signal phaseControlSig  :   t_phase;
+signal phase_c          :   t_phase;
 signal powControl       :   t_dds_phase;
 signal powControlValid  :   std_logic;
 signal actPhase         :   unsigned(CORDIC_WIDTH-1 downto 0);
@@ -169,11 +190,33 @@ signal debugCount   :   unsigned(7 downto 0);
 signal resetExtended:   std_logic;
 signal resetCount   :   unsigned(7 downto 0);
 
+--
+-- Timing controller signals
+--
+signal tcValid      :   std_logic;
+signal tcData       :   t_param_reg;
+signal tcReset      :   std_logic;
+signal tcStart      :   std_logic;
+signal tc_o         :   t_timing_control;
+
 begin
+
+--
+-- Parse top register and triggers
+--
+dfshift <= unsigned(topReg(3 downto 0));    --Integer shift right for demodulation frequency
+useSetDemod <= topReg(4);                   --Use a set demodulation frequency '1' or a shifted one '0'
+useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
+
+regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
+tcStart <= triggers(1);                     --Start the timing controller
+--triggers(2) is used in the extended FIFO reset
+tcReset <= triggers(3);                     --Resets the timing controller FIFO
 
 --
 -- DDS output signals
 --
+df <= dfSet when useManual = '1' else tc_o.df;  --Use dfSet when manual (set in parse process) or timing controller value
 ftw1 <= f0 + df;
 ftw2 <= f0 - df;
 DDS_2Channel: DualChannelDDS
@@ -191,26 +234,17 @@ port map(
 -- Phase calculation
 --
 adc <= signed(adcData_i(adc'length-1 downto 0));
-regPhaseValid <= triggers(0);
---RegPhaseValid_Sync: process(adcclk,aresetn) is
---begin
---    if aresetn = '0' then
---        regPhaseValid <= '0';
---    elsif rising_edge(adcclk) then
---        if triggers(0) = '1' then
---            regPhaseValid <= '1';
---        else
---            regPhaseValid <= '0';
---        end if;
---    end if;
---end process;
-
+--
+-- Demodulation frequency is either a shifted version of the one used for freq generation
+-- or its a fixed one set by the user. The fixed one is allowed only for manual control
+--
+dfmod_i <= shift_left(df,to_integer(dfShift)) when (useSetDemod = '0' or useManual = '0') else dfmod;
 PhaseCalc: PhaseCalculation
 port map(
     clk         =>  adcclk,
     aresetn     =>  aresetn,
     adcData_i   =>  adc,
-    freq_i      =>  dfmod,
+    freq_i      =>  dfmod_i,
     reg0        =>  regPhaseCalc,
     regValid_i  =>  regPhaseValid,
     phase_o     =>  phase,
@@ -220,6 +254,7 @@ port map(
 --
 -- Phase control
 --
+phase_c <= phaseControlSig when useManual = '1' else tc_o.pow;
 MainPhaseControl: PhaseControl
 port map(
     clk         =>  adcclk,
@@ -228,7 +263,7 @@ port map(
     gains       =>  regControlGains,
     phase_i     =>  phase,
     valid_i     =>  phaseValid,
-    phase_c     =>  phaseControlSig,
+    phase_c     =>  phase_c,
     dds_phase_o =>  powControl,
     act_phase_o =>  actPhase,
     valid_o     =>  powControlValid
@@ -237,13 +272,15 @@ port map(
 --
 -- FIFO buffering for long data sets
 --
+-- Extends the FIFO reset signal
+--
 ResetExtend: process(adcclk,aresetn) is
 begin
     if aresetn = '0' then
         resetExtended <= '0';
         resetCount <= (others => '0');
     elsif rising_edge(adcclk) then
-        if triggers(2) = '1' then
+        if triggers(2) = '1' or tcReset = '1' then
             resetExtended <= '1';
             resetCount <= X"01";
         elsif resetCount < 20 then
@@ -253,9 +290,10 @@ begin
         end if;
     end if;
 end process;
-
-enableFIFO <= fifoReg(0);
---fifoData(0) <= std_logic_vector(debugCount) & std_logic_vector(resize(phase,FIFO_WIDTH-8));
+--
+-- Generate FIFO buffers
+--
+enableFIFO <= fifoReg(0) or tc_o.enable;
 fifoData(0) <= std_logic_vector(resize(phase,FIFO_WIDTH));
 fifoData(1) <= std_logic_vector(resize(actPhase,FIFO_WIDTH));
 fifoData(2) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
@@ -263,7 +301,7 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
     fifo_bus(I).m.reset <= resetExtended;
     
     fifoValid(I) <= powControlValid and enableFIFO;
-    PhaseMeas_FIFO_X: FIFOHandler
+    PhaseMeas_FIFO_NORMAL_X: FIFOHandler
     port map(
 --            wr_clk      =>  adcclk,
 --            rd_clk      =>  sysclk,
@@ -274,8 +312,21 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
         bus_m       =>  fifo_bus(I).m,
         bus_s       =>  fifo_bus(I).s
     );
-
 end generate FIFO_GEN;
+
+--
+-- Timing controller
+--
+TC: TimingController
+port map(
+    clk         =>  adcclk,
+    aresetn     =>  aresetn,
+    reset       =>  tcReset,
+    data_i      =>  tcData,
+    valid_i     =>  tcValid,
+    start_i     =>  tcStart,
+    data_o      =>  tc_o
+);
 
 --
 -- Parse AXI data
@@ -291,9 +342,9 @@ begin
         comState <= idle;
         bus_s <= INIT_AXI_BUS_SLAVE;
         triggers <= (others => '0');
-        f0 <= to_unsigned(37580964,f0'length);  --35 MHz
-        df <= to_unsigned(1073742,df'length);   --1 MHz
-        dfmod <= to_unsigned(8*1073742,dfmod'length);
+        f0 <= to_unsigned(37580964,f0'length);      --35 MHz
+        dfSet <= to_unsigned(134218,dfSet'length);     -- 0.125 MHz
+        dfmod <= to_unsigned(1073744,dfmod'length); -- 1 MHz
         phaseControlSig <= to_signed(0,phaseControlSig'length);
         regPhaseCalc <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
         regPhaseControl <= X"000000" & X"08";
@@ -302,13 +353,12 @@ begin
         topReg <= (others => '0');
         fifoReg <= (others => '0');
         
-        mem_bus.m.addr <= (others => '0');
-        mem_bus.m.trig <= '0';
-        mem_bus.m.status <= idle;
-        
         fifo_bus(0).m.status <= idle;
         fifo_bus(1).m.status <= idle;
         fifo_bus(2).m.status <= idle;
+        
+        tcValid <= '0';
+        tcData <= (others => '0');
     elsif rising_edge(adcclk) then
         FSM: case(comState) is
             when idle =>
@@ -328,7 +378,7 @@ begin
                         when X"000000" => rw(bus_m,bus_s,comState,triggers);
                         when X"000004" => rw(bus_m,bus_s,comState,topReg);
                         when X"000008" => rw(bus_m,bus_s,comState,f0);
-                        when X"00000C" => rw(bus_m,bus_s,comState,df);
+                        when X"00000C" => rw(bus_m,bus_s,comState,dfSet);
                         when X"000010" => rw(bus_m,bus_s,comState,dfmod);
                         when X"000014" => rw(bus_m,bus_s,comState,phaseControlSig);
                         when X"000018" => rw(bus_m,bus_s,comState,regPhaseCalc);
@@ -341,6 +391,14 @@ begin
                         when X"000028" => fifoRead(bus_m,bus_s,comState,fifo_bus(0).m,fifo_bus(0).s);
                         when X"00002C" => fifoRead(bus_m,bus_s,comState,fifo_bus(1).m,fifo_bus(1).s);
                         when X"000030" => fifoRead(bus_m,bus_s,comState,fifo_bus(2).m,fifo_bus(2).s);
+                        --
+                        -- Write data to timing controller
+                        --
+                        when X"000034" =>
+                            bus_s.resp <= "01";
+                            comState <= finishing;
+                            tcData <= resize(bus_m.data,tcData'length);
+                            tcValid <= '1';
                         
                         when others => 
                             comState <= finishing;
@@ -372,6 +430,7 @@ begin
  
             when finishing =>
                 triggers <= (others => '0');
+                tcValid <= '0';
                 bus_s.resp <= "00";
                 comState <= idle;
  

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="TimingController_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="TimingController_tb" />
+            <top_module name="axi_bus_package" />
+            <top_module name="customdatatypes" />
+            <top_module name="glbl" />
+            <top_module name="vcomponents" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="329310fs"></ZoomStartTime>
+      <ZoomEndTime time="715111fs"></ZoomEndTime>
+      <Cursor1Time time="565000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="533"></NameColumnWidth>
+      <ValueColumnWidth column_width="243"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="17" />
+   <wvobject fp_name="/TimingController_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/aresetn" type="logic">
+      <obj_property name="ElementShortName">aresetn</obj_property>
+      <obj_property name="ObjectShortName">aresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/data_i" type="array">
+      <obj_property name="ElementShortName">data_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_i[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/valid_i" type="logic">
+      <obj_property name="ElementShortName">valid_i</obj_property>
+      <obj_property name="ObjectShortName">valid_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/start_i" type="logic">
+      <obj_property name="ElementShortName">start_i</obj_property>
+      <obj_property name="ObjectShortName">start_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/data_o" type="array">
+      <obj_property name="ElementShortName">data_o</obj_property>
+      <obj_property name="ObjectShortName">data_o</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/count" type="array">
+      <obj_property name="ElementShortName">count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">count[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/loadDataEnable" type="logic">
+      <obj_property name="ElementShortName">loadDataEnable</obj_property>
+      <obj_property name="ObjectShortName">loadDataEnable</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/fifoState" type="other">
+      <obj_property name="ElementShortName">fifoState</obj_property>
+      <obj_property name="ObjectShortName">fifoState</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/empty" type="logic">
+      <obj_property name="ElementShortName">empty</obj_property>
+      <obj_property name="ObjectShortName">empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/full" type="logic">
+      <obj_property name="ElementShortName">full</obj_property>
+      <obj_property name="ObjectShortName">full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/wrTrig" type="logic">
+      <obj_property name="ElementShortName">wrTrig</obj_property>
+      <obj_property name="ObjectShortName">wrTrig</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/rdTrig" type="logic">
+      <obj_property name="ElementShortName">rdTrig</obj_property>
+      <obj_property name="ObjectShortName">rdTrig</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/fifo_o" type="array">
+      <obj_property name="ElementShortName">fifo_o[77:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_o[77:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/delay" type="array">
+      <obj_property name="ElementShortName">delay[27:0]</obj_property>
+      <obj_property name="ObjectShortName">delay[27:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/TimingController_tb/uut/state" type="other">
+      <obj_property name="ElementShortName">state</obj_property>
+      <obj_property name="ObjectShortName">state</obj_property>
+   </wvobject>
+</wave_config>

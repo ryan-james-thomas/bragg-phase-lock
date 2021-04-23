@@ -156,7 +156,7 @@ constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (other
 type t_timing_control is record
     enable  :   std_logic;
     df      :   t_dds_phase;
-    pow     :   t_dds_phase;
+    pow     :   t_phase;
     valid   :   std_logic;
 end record t_timing_control;
 

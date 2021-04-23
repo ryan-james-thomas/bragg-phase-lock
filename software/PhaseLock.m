@@ -7,23 +7,33 @@ classdef PhaseLock < handle
     properties(SetAccess = immutable)
         conn
         
-        f0
-        df
-        demod
+        % Top-level properties
+        shift       %Shift right by this
+        useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
+        useManual   %True to use manual values, false to use timing controller values
         
-        cicRate
+        %Frequency parameters
+        f0          %Center frequency
+        df          %Difference frequency
+        demod       %Demodulation frequency
         
-        phasec
-        enableFB
-        polarity
-        Kp
-        Ki
-        divisor
+        % Phase calculation parameters
+        cicRate     %Log2(CIC rate reduction)
         
+        % Phase control parameters
+        phasec      %Manual control phase
+        enableFB    %Enable feedback
+        polarity    %Feedback polarity
+        Kp          %Proportional gain
+        Ki          %Integral gain
+        divisor     %Overall divisor
+        
+        % Read only
         samplesCollected
     end
     
     properties(SetAccess = protected)
+        % R/W registers
         trigReg
         topReg
         freqOffsetReg
@@ -34,7 +44,11 @@ classdef PhaseLock < handle
         phaseControlReg
         phaseGainReg
         
+        % Read-only register
         sampleReg
+        
+        %Write-only register
+        timingReg
     end
     
     properties(Constant)
@@ -63,14 +77,30 @@ classdef PhaseLock < handle
             self.freqDemodReg = PhaseLockRegister('10',self.conn);
             %
             % Phase control/calculation registers
+            %
             self.phaseControlSigReg = PhaseLockRegister('14',self.conn);
             self.phaseCalcReg = PhaseLockRegister('18',self.conn);
             self.phaseControlReg = PhaseLockRegister('1C',self.conn);
             self.phaseGainReg = PhaseLockRegister('20',self.conn);
-            
+            %
             % Read-only registers
+            %
             self.sampleReg = PhaseLockRegister('01000000',self.conn);
+            %
+            % Write-only registers
+            %
+            self.timingReg = PhaseLockRegister('00000034',self.conn);
 
+            %
+            % Top-level parameters
+            %
+            self.shift = PhaseLockParameter([0,3],self.topReg)...
+                .setLimits('lower',0,'upper',15)...
+                .setFunctions('to',@(x) x,'from',@(x) x);
+            self.useSetDemod = PhaseLockParameter([4,4],self.topReg)...
+                .setLimits('lower',0,'upper',1);
+            self.useManual = PhaseLockParameter([5,5],self.topReg)...
+                .setLimits('lower',0,'upper',1);
             %
             %Frequency generation
             %
@@ -126,11 +156,17 @@ classdef PhaseLock < handle
         
         function self = setDefaults(self,varargin)
             %
+            % Top-level parameters
+            %
+            self.shift.set(3);
+            self.useSetDemod.set(0);
+            self.useManual.set(1);
+            %
             % Frequency parameters
             %
             self.f0.set(35);
-            self.df.set(0);
-            self.demod.set(0);
+            self.df.set(0.125);
+            self.demod.set(self.df.intValue*8);
             %
             % Phase calculation
             %
@@ -141,9 +177,9 @@ classdef PhaseLock < handle
             self.phasec.set(0);
             self.enableFB.set(0);
             self.polarity.set(0);
-            self.Kp.set(1);
-            self.Ki.set(1);
-            self.divisor.set(3);
+            self.Kp.set(50);
+            self.Ki.set(140);
+            self.divisor.set(11);
             
             self.samplesCollected.set(0);
 
@@ -155,6 +191,7 @@ classdef PhaseLock < handle
         
         function self = upload(self)
             self.check;
+            self.topReg.write;
             self.freqOffsetReg.write;
             self.freqDiffReg.write;
             self.freqDemodReg.write;
@@ -162,13 +199,13 @@ classdef PhaseLock < handle
             self.phaseCalcReg.write;
             self.phaseControlReg.write;
             self.phaseGainReg.write;
-            self.topReg.write;
             
             self.updateCIC;
         end
         
         function self = fetch(self)
             %Read registers
+            self.topReg.read;
             self.freqOffsetReg.read;
             self.freqDiffReg.read;
             self.freqDemodReg.read;
@@ -176,10 +213,12 @@ classdef PhaseLock < handle
             self.phaseCalcReg.read;
             self.phaseControlReg.read;
             self.phaseGainReg.read;
-            self.topReg.read;
             
             
             %Read parameters
+            self.shift.get;
+            self.useSetDemod.get;
+            self.useManual.get;
             self.f0.get;
             self.df.get;
             self.demod.get;
@@ -196,25 +235,60 @@ classdef PhaseLock < handle
             
         end
         
-        function self = acquire(self)
+        function self = start(self)
             self.trigReg.set(1,[1,1]).write;
             self.trigReg.set(0,[1,1]);
         end
         
-        function self = updateCIC(self)
-            self.trigReg.set(1,[0,0]).write;
-            self.trigReg.set(0,[1,1]);
+        function self = resetTC(self)
+            self.trigReg.set(1,[3,3]).write;
+            self.trigReg.set(0,[3,3]);
         end
         
-        function self = getPhaseData(self,numSamples,saveStreams)
+        function self = updateCIC(self)
+            self.trigReg.set(1,[0,0]).write;
+            self.trigReg.set(0,[0,0]);
+        end
+        
+        function self = getPhaseData(self,numSamples,saveStreams,startFlag)
             if nargin < 3
                 saveStreams = 1;
             end
-            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveStreams,'saveType',0);
+            if nargin < 4
+                startFlag = 0;
+            end
+            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveStreams,'saveType',0,'startFlag',startFlag);
             raw = typecast(self.conn.recvMessage,'uint8');
             d = self.convertData(raw,'phase',saveStreams);
             self.data = d;
             self.t = 1/self.CLK*2^self.cicRate.value*(0:(numSamples-1));
+        end
+        
+        function uploadTiming(self,t,ph,freq)
+            t = t(:);
+            ph = ph(:);
+            freq = freq(:);
+            
+            dt = uint32([round(diff(t)*self.CLK);1000]);
+            ph = int32(ph/pi*2^(self.CORDIC_WIDTH-3));
+            freq = uint32(freq*1e6/self.CLK*2^self.DDS_WIDTH);
+            
+            addr = self.timingReg.addr;
+            d = zeros(numel(dt),1,'uint32');
+            d(1) = uint32(addr);
+            mm = 2;
+            for nn = 1:numel(dt)
+                if mod(nn-1,3) == 0
+                    d(mm) = typecast(ph(nn),'uint32');
+                elseif mod(nn-1,3) == 1
+                    d(mm) = typecast(freq(nn),'uint32');
+                elseif mod(nn-1,3) == 2
+                    d(mm) = typecast(dt(nn),'uint32');
+                end
+                mm = mm + 1;
+            end
+            self.resetTC;
+            self.conn.write(d);
         end
         
         function disp(self)
@@ -231,6 +305,9 @@ classdef PhaseLock < handle
             self.phaseGainReg.makeString('phaseGainReg',strwidth);
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Frequency Parameters\n');
+            fprintf(1,'\t\t%25s: %d\n','Shift',self.shift.value);
+            fprintf(1,'\t\t%25s: %d\n','Use Set Demod',self.useSetDemod.value);
+            fprintf(1,'\t\t%25s: %d\n','Use Manual',self.useManual.value);
             fprintf(1,'\t\t%25s: %.3f\n','Center Frequency [MHz]',self.f0.value);
             fprintf(1,'\t\t%25s: %.3f\n','Difference Freq [MHz]',self.df.value);
             fprintf(1,'\t\t%25s: %d\n','Demod Freq [int]',self.df.value);

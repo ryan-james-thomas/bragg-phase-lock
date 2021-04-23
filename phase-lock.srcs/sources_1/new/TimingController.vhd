@@ -9,8 +9,10 @@ entity TimingController is
     port(
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
+        reset       :   in  std_logic;
 
-        bus_m_i     :   in  t_mem_bus_master;
+        data_i      :   in  t_param_reg;
+        valid_i     :   in  std_logic;
 
         start_i     :   in  std_logic;
         data_o      :   out t_timing_control
@@ -19,34 +21,80 @@ end TimingController;
 
 architecture rtl of TimingController is
 
-component BlockMemHandlerRAM is
-    port(
-        clk         :   in  std_logic;
-        aresetn     :   in  std_logic;
-        
-        bus_m_wr    :   in  t_mem_bus_master;
-        bus_m_rd    :   in  t_mem_bus_master;
-        bus_s       :   out t_mem_bus_slave
-    );
-end component;
+COMPONENT FIFO_DPG
+  PORT (
+    clk : IN STD_LOGIC;
+    rst : IN STD_LOGIC;
+    din : IN STD_LOGIC_VECTOR(77 DOWNTO 0);
+    wr_en : IN STD_LOGIC;
+    rd_en : IN STD_LOGIC;
+    dout : OUT STD_LOGIC_VECTOR(77 DOWNTO 0);
+    full : OUT STD_LOGIC;
+    empty : OUT STD_LOGIC
+  );
+END COMPONENT;
 
-signal mem_bus  :   t_mem_bus   :=  INIT_MEM_BUS;
+constant FIFO_POW_WIDTH :   natural :=  CORDIC_WIDTH;
+constant FIFO_FREQ_WIDTH:   natural :=  PHASE_WIDTH;
+constant FIFO_TIME_WIDTH:   natural :=  27;
 
-type t_state_local is (idle,preload_reading,preload_waiting,reading,finishing);
-signal state    :   t_status_local  :=  idle;
+type t_state_local is (wait_for_trigger,waiting);
+signal state    :   t_state_local  :=  wait_for_trigger;
 
+subtype t_fifo_local is std_logic_vector(77 downto 0);
+type t_fifo_state_local is (pow,freq,duration);
+signal fifo_i   :   t_fifo_local;
+signal fifoCount:   unsigned(1 downto 0);
+signal fifoState:   t_fifo_state_local;
+
+signal empty, full   :   std_logic;
+signal wrTrig, rdTrig       :   std_logic;
+signal fifo_o   :   t_fifo_local;
+
+signal delay, delayCount    :   unsigned(FIFO_TIME_WIDTH downto 0);
+signal enabled  :   std_logic;
 begin
 
 --
--- Store timing data in a block RAM
+-- Generate data words for FIFO input
 --
-StoreTimingData: BlockMemHandlerRAM
+MakeFIFOInputs: process(clk,aresetn) is
+begin
+    if aresetn = '0' then
+        fifo_i <= (others => '0');
+        fifoState <= pow;
+        wrTrig <= '0';
+    elsif rising_edge(clk) then
+        if valid_i = '1' then
+            if fifoState = pow then
+                fifo_i(FIFO_POW_WIDTH - 1 downto 0) <= std_logic_vector(resize(signed(data_i(FIFO_POW_WIDTH - 1 downto 0)),FIFO_POW_WIDTH));
+                fifoState <= freq;
+                wrTrig <= '0';
+            elsif fifoState = freq then
+                fifo_i(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH) <= data_i(FIFO_FREQ_WIDTH - 1 downto 0);
+                fifoState <= duration;
+                wrTrig <= '0';
+            elsif fifoState = duration then
+                fifo_i(fifo_i'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH) <= data_i(FIFO_TIME_WIDTH - 1 downto 0);
+                fifoState <= pow;
+                wrTrig <= '1';
+            end if;
+        else
+            wrTrig <= '0';
+        end if;
+    end if;
+end process;
+
+DPG_Storage: FIFO_DPG
 port map(
-    clk         =>  clk,
-    aresetn     =>  aresetn,
-    bus_m_wr    =>  bus_m_i,
-    bus_m_rd    =>  mem_bus.m,
-    bus_s       =>  mem_bus.s
+    clk     =>  clk,
+    rst     =>  reset,
+    din     =>  fifo_i,
+    wr_en   =>  wrTrig,
+    rd_en   =>  rdTrig,
+    empty   =>  empty,
+    full    =>  full,
+    dout    =>  fifo_o
 );
 
 --
@@ -55,56 +103,42 @@ port map(
 TimingProc: process(clk,aresetn) is
 begin
     if aresetn = '0' then
-        state <= idle;
+        state <= wait_for_trigger;
         data_o <= INIT_TIMING_CONTROL;
-        mem_bus.m <= INIT_MEM_BUS_MASTER;
-
+        rdTrig <= '0';
+        enabled <= '0';
     elsif rising_edge(clk) then
         FSM: case (state) is
             --
-            -- Wait for either memory bus trigger or start trigger.
-            -- Memory bus trigger initiates pre-loading of first data words
-            -- Start trigger starts going through stored data
+            -- Wait for start trigger
             --
-            when idle =>
-                if bus_m_i.trig = '1' then
-                    state <= preload_reading;
-                elsif start_i = '1' then
+            when wait_for_trigger =>
+                data_o.pow <= resize(signed(fifo_o(FIFO_POW_WIDTH - 1 downto 0)),data_o.pow'length);
+                data_o.df <= unsigned(fifo_o(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH));
+                delay <= resize(unsigned(fifo_o(fifo_o'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH)),delay'length) - 3;
+                
+                if start_i = '1' or (empty = '0' and enabled = '1') then
+                    state <= waiting;
+                    rdTrig <= '1';
                     data_o.valid <= '1';
                     data_o.enable <= '1';
-                    mem_bus.m.trig <= '1';
-                    mem_bus.m.addr <= mem_bus.m.addr + 1;
-                    state <= reading;
+                    enabled <= '1';
+                else
+                    rdTrig <= '0';
+                    data_o.valid <= '0';
+                    enabled <= '0';
+                    data_o.valid <= '0';
+                    data_o.enable <= '0';
                 end if;
-
-            when reading =>
-                mem_bus.m.trig <= '0';
+                
+            when waiting =>
+                rdTrig <= '0';
                 data_o.valid <= '0';
-                if mem_bus.s.valid = '1' then
-                    data_o.df <= mem_bus.s.data(data_o.df'length-1 downto 0);
-                    data_o.pow <= mem_bus.s.data(data_o.df'length+data_o.pow'length-1 downto data_o.df'length);
-                    if mem_bus.m.addr = mem_bus.s.last then
-                        state <= finishing;
-                    else
-                        state <= idle;
-                    end if;
+                if delay(delay'length-1) = '0' then
+                    delay <= delay - 1;
+                else
+                    state <= wait_for_trigger;
                 end if;
-
-                
-
-            when preload_reading =>
-                mem_bus.m.trig <= '1';
-                mem_bus.m.addr <= (others => '0');
-                state <= preload_waiting;
-
-            when preload_waiting =>
-                mem_bus.m.trig <= '0';
-                if mem_bus.s.valid = '1' then
-                    data_o.df <= mem_bus.s.data(data_o.df'length-1 downto 0);
-                    data_o.pow <= mem_bus.s.data(data_o.df'length+data_o.pow'length-1 downto data_o.df'length);
-                    state <= idle;
-                end if;
-                
 
         end case;
     end if;

@@ -321,4 +321,20 @@ begin
     end if;
 end fifoRead;
 
+-- procedure fifoWriteSimple(
+--     signal axi_m    :   in      t_axi_bus_master;
+--     signal axi_s    :   out     t_axi_bus_slave;
+--     signal state    :   inout   t_status;
+--     signal valid_o  :   out     std_logic;
+--     signal data_o   :   out     std_logic_vector) is
+-- begin
+--     axi_s.resp <= "01";
+--     state <= finishing;
+--     if axi_m.valid(1) = '0' then
+--         data_o <= resize(bus_i.data,param'length);
+--     else
+--         axi_s.data <= resize(param,AXI_DATA_WIDTH);
+--     end if;
+-- end fifoWriteSimple;
+
 end AXI_Bus_Package;

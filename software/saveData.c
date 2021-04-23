@@ -31,6 +31,7 @@ int main(int argc, char **argv)
   uint8_t saveStreams = 0;
   uint32_t tmp;
   uint32_t *data;
+  uint8_t startFlag = 0;
   FILE *ptr;
 
   clock_t start, stop;
@@ -43,15 +44,23 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
     numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
     saveType = 0;
     saveStreams = 1;
+    startFlag = 0;
   } else if (argc == 3) {
     numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
     saveType = atoi(argv[2]);;
     saveStreams = 1;
+    startFlag = 0;
   } else if (argc == 4) {
     numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
     saveType = atoi(argv[2]);;
     saveStreams = atoi(argv[3]);
-  } else  {
+    startFlag = 0;
+  } else if (argc == 5)  {
+    numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
+    saveType = atoi(argv[2]);;
+    saveStreams = atoi(argv[3]);
+    startFlag = atoi(argv[4]);
+  } else {
     printf("You must supply at least one argument!\n");
     return 0;
   }
@@ -89,6 +98,9 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
 //  printf("FIFO Reset!\n");
   usleep(1000);
   //Enable FIFO
+  if (startFlag == 1) {
+    *((uint32_t *)(cfg + 0)) = (1 << 1);
+  }
   *((uint32_t *)(cfg + FIFO_LOC)) = 1;
 //  printf("FIFO Enabled!\n");
   //Record data
