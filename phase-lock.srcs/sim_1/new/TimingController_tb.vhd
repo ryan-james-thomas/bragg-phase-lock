@@ -79,6 +79,8 @@ begin
             data_i <= DATA(to_integer(count));
             valid_i <= '1';
             count <= count + 1;
+        elsif reset = '1' then
+            count <= (others => '0');
         else
             valid_i <= '0';
         end if;
@@ -95,6 +97,19 @@ begin
     wait for 200 ns;
     wait until clk'event and clk = '1';
     aresetn <= '1';
+    loadDataEnable <= '1';
+    wait for 200 ns;
+    wait until clk'event and clk = '1';
+    loadDataEnable <= '0';
+    start_i <= '1';
+    wait until clk'event and clk = '1';
+    start_i <= '0';
+    wait for 200 ns;
+    wait until clk'event and clk = '1';
+    reset <= '1';
+    wait until clk'event and clk = '1';
+    reset <= '0';
+    wait for 200 ns;
     loadDataEnable <= '1';
     wait for 200 ns;
     wait until clk'event and clk = '1';
