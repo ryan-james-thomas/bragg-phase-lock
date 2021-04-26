@@ -91,6 +91,7 @@ component PhaseControl is
 
         dds_phase_o :   out t_dds_phase;
         act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
+        phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
     );
 end component;
@@ -114,12 +115,13 @@ component TimingController is
     port(
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
-        reset       :   in  std_logic;
+        reset_i     :   in  std_logic;
 
         data_i      :   in  t_param_reg;
         valid_i     :   in  std_logic;
 
         start_i     :   in  std_logic;
+        debug_o     :   out std_logic_vector(7 downto 0);
         data_o      :   out t_timing_control
     );
 end component;
@@ -165,7 +167,7 @@ signal phase_c          :   t_phase;
 signal powControl       :   t_dds_phase;
 signal powControlValid  :   std_logic;
 signal actPhase         :   unsigned(CORDIC_WIDTH-1 downto 0);
-
+signal phaseSum         :   t_phase;
 --
 -- Block memory signals
 --
@@ -198,6 +200,7 @@ signal tcData       :   t_param_reg;
 signal tcReset      :   std_logic;
 signal tcStart      :   std_logic;
 signal tc_o         :   t_timing_control;
+signal debug_o      :   std_logic_vector(7 downto 0);
 
 begin
 
@@ -211,7 +214,33 @@ useManual <= topReg(5);                     --Use manual frequencies and phases 
 regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
 tcStart <= triggers(1);                     --Start the timing controller
 --triggers(2) is used in the extended FIFO reset
-tcReset <= triggers(3);                     --Resets the timing controller FIFO
+--tcReset <= triggers(3);                     --Resets the timing controller FIFO
+
+--
+-- Extends FIFO reset signals
+--
+ResetExtend: process(adcclk,aresetn) is
+begin
+    if aresetn = '0' then
+        resetExtended <= '0';
+        tcReset <= '0';
+        resetCount <= (others => '0');
+    elsif rising_edge(adcclk) then
+        if triggers(3) = '1' then
+            tcReset <= '1';
+            resetExtended <= '1';
+            resetCount <= X"01";
+        elsif triggers(2) = '1' then
+            resetExtended <= '1';
+            resetCount <= X"01";
+        elsif resetCount > 0 and resetCount < 20 then
+            resetCount <= resetCount + 1;
+        else
+            resetExtended <= '0';
+            tcReset <= '0';
+        end if;
+    end if;
+end process;
 
 --
 -- DDS output signals
@@ -266,36 +295,19 @@ port map(
     phase_c     =>  phase_c,
     dds_phase_o =>  powControl,
     act_phase_o =>  actPhase,
+    phaseSum_o  =>  phaseSum,
     valid_o     =>  powControlValid
 );
                
 --
 -- FIFO buffering for long data sets
---
--- Extends the FIFO reset signal
---
-ResetExtend: process(adcclk,aresetn) is
-begin
-    if aresetn = '0' then
-        resetExtended <= '0';
-        resetCount <= (others => '0');
-    elsif rising_edge(adcclk) then
-        if triggers(2) = '1' or tcReset = '1' then
-            resetExtended <= '1';
-            resetCount <= X"01";
-        elsif resetCount < 20 then
-            resetCount <= resetCount + 1;
-        else
-            resetExtended <= '0';
-        end if;
-    end if;
-end process;
+
 --
 -- Generate FIFO buffers
 --
 enableFIFO <= fifoReg(0) or tc_o.enable;
 fifoData(0) <= std_logic_vector(resize(phase,FIFO_WIDTH));
-fifoData(1) <= std_logic_vector(resize(actPhase,FIFO_WIDTH));
+fifoData(1) <= std_logic_vector(resize(phaseSum,FIFO_WIDTH));
 fifoData(2) <= std_logic_vector(resize(powControl,FIFO_WIDTH));
 FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
     fifo_bus(I).m.reset <= resetExtended;
@@ -321,11 +333,12 @@ TC: TimingController
 port map(
     clk         =>  adcclk,
     aresetn     =>  aresetn,
-    reset       =>  tcReset,
+    reset_i     =>  tcReset,
     data_i      =>  tcData,
     valid_i     =>  tcValid,
     start_i     =>  tcStart,
-    data_o      =>  tc_o
+    data_o      =>  tc_o,
+    debug_o     =>  debug_o
 );
 
 --
@@ -410,8 +423,12 @@ begin
                     --
                     when X"01" =>
                         ParamCaseReadOnly: case(bus_m.addr(23 downto 0)) is
-                            when X"000000" => readOnly(bus_m,bus_s,comState,mem_bus.s.last);
---                            when X"000004" => fifoRead(bus_m,bus_s,comState,fifo_bus.m,fifo_bus.s);
+                            when X"000000" => readOnly(bus_m,bus_s,comState,df);
+                            when X"000004" => readOnly(bus_m,bus_s,comState,dfmod_i);
+                            when X"000008" => readOnly(bus_m,bus_s,comState,tc_o.df);
+                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.pow);
+                            when X"000010" => readOnly(bus_m,bus_s,comState,phase_c);
+                            when X"000014" => readOnly(bus_m,bus_s,comState,debug_o);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";

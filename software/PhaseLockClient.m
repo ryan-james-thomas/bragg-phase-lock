@@ -34,10 +34,12 @@ classdef PhaseLockClient < handle
             if isempty(r)
                 self.client = tcpip(self.host,self.TCP_PORT,'byteOrder','littleEndian');
                 self.client.InputBufferSize = 2^20;
+                self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             elseif strcmpi(r.Status,'closed')
                 self.client = r;
                 self.client.InputBufferSize = 2^20;
+                self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             else
                 self.client = r;

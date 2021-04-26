@@ -9,12 +9,13 @@ entity TimingController is
     port(
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
-        reset       :   in  std_logic;
+        reset_i     :   in  std_logic;
 
         data_i      :   in  t_param_reg;
         valid_i     :   in  std_logic;
 
         start_i     :   in  std_logic;
+        debug_o     :   out std_logic_vector(7 downto 0);
         data_o      :   out t_timing_control
     );
 end TimingController;
@@ -53,7 +54,12 @@ signal fifo_o   :   t_fifo_local;
 
 signal delay, delayCount    :   unsigned(FIFO_TIME_WIDTH downto 0);
 signal enabled  :   std_logic;
+signal reset    :   std_logic;
 begin
+
+debug_o(1 downto 0) <= "00" when fifoState = pow else "01" when fifoState = freq else "10" when fifoState = duration;
+debug_o(2) <= '0' when state = wait_for_trigger else '1';
+debug_o(3) <= enabled;
 
 --
 -- Generate data words for FIFO input
@@ -64,10 +70,16 @@ begin
         fifo_i <= (others => '0');
         fifoState <= pow;
         wrTrig <= '0';
+        reset <= '1';
     elsif rising_edge(clk) then
-        if valid_i = '1' then
+        if reset_i = '1' then
+            reset <= '1';
+            wrTrig <= '0';
+            fifoState <= pow;
+            fifo_i <= (others => '0');
+        elsif valid_i = '1' then
             if fifoState = pow then
-                fifo_i(FIFO_POW_WIDTH - 1 downto 0) <= std_logic_vector(resize(signed(data_i(FIFO_POW_WIDTH - 1 downto 0)),FIFO_POW_WIDTH));
+                fifo_i(FIFO_POW_WIDTH - 1 downto 0) <= std_logic_vector(resize(signed(data_i),FIFO_POW_WIDTH));
                 fifoState <= freq;
                 wrTrig <= '0';
             elsif fifoState = freq then
@@ -81,6 +93,7 @@ begin
             end if;
         else
             wrTrig <= '0';
+            reset <= '0';
         end if;
     end if;
 end process;
@@ -107,40 +120,49 @@ begin
         data_o <= INIT_TIMING_CONTROL;
         rdTrig <= '0';
         enabled <= '0';
+        delay <= (others => '0');
+        
     elsif rising_edge(clk) then
-        FSM: case (state) is
-            --
-            -- Wait for start trigger
-            --
-            when wait_for_trigger =>
-                data_o.pow <= resize(signed(fifo_o(FIFO_POW_WIDTH - 1 downto 0)),data_o.pow'length);
-                data_o.df <= unsigned(fifo_o(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH));
-                delay <= resize(unsigned(fifo_o(fifo_o'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH)),delay'length) - 3;
-                
-                if start_i = '1' or (empty = '0' and enabled = '1') then
-                    state <= waiting;
-                    rdTrig <= '1';
-                    data_o.valid <= '1';
-                    data_o.enable <= '1';
-                    enabled <= '1';
-                else
+        if reset = '1' then
+            state <= wait_for_trigger;
+            enabled <= '0';
+            data_o <= INIT_TIMING_CONTROL;
+            rdTrig <= '0';
+            delay <= (others => '0');
+        else
+            FSM: case (state) is
+                --
+                -- Wait for start trigger
+                --
+                when wait_for_trigger =>
+                    data_o.pow <= resize(signed(fifo_o(FIFO_POW_WIDTH - 1 downto 0)),data_o.pow'length);
+                    data_o.df <= unsigned(fifo_o(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH));
+                    delay <= resize(unsigned(fifo_o(fifo_o'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH)),delay'length) - 3;
+                    
+                    if start_i = '1' or (empty = '0' and enabled = '1') then
+                        state <= waiting;
+                        rdTrig <= '1';
+                        data_o.valid <= '1';
+                        data_o.enable <= '1';
+                        enabled <= '1';
+                    else
+                        rdTrig <= '0';
+                        data_o.valid <= '0';
+                        enabled <= '0';
+                        data_o.enable <= '0';
+                    end if;
+                    
+                when waiting =>
                     rdTrig <= '0';
                     data_o.valid <= '0';
-                    enabled <= '0';
-                    data_o.valid <= '0';
-                    data_o.enable <= '0';
-                end if;
-                
-            when waiting =>
-                rdTrig <= '0';
-                data_o.valid <= '0';
-                if delay(delay'length-1) = '0' then
-                    delay <= delay - 1;
-                else
-                    state <= wait_for_trigger;
-                end if;
-
-        end case;
+                    if delay(delay'length-1) = '0' then
+                        delay <= delay - 1;
+                    else
+                        state <= wait_for_trigger;
+                    end if;
+    
+            end case;
+        end if;
     end if;
 end process;
 

@@ -14,15 +14,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="6403480fs"></ZoomStartTime>
-      <ZoomEndTime time="6596381fs"></ZoomEndTime>
-      <Cursor1Time time="6425000fs"></Cursor1Time>
+      <ZoomStartTime time="9851100fs"></ZoomStartTime>
+      <ZoomEndTime time="11642101fs"></ZoomEndTime>
+      <Cursor1Time time="10662100fs"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="533"></NameColumnWidth>
-      <ValueColumnWidth column_width="243"></ValueColumnWidth>
+      <NameColumnWidth column_width="389"></NameColumnWidth>
+      <ValueColumnWidth column_width="239"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="49" />
+   <WVObjectSize size="59" />
    <wvobject fp_name="/topmod_tb/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -32,8 +32,8 @@
       <obj_property name="ObjectShortName">aresetn</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/adcData_i" type="array">
-      <obj_property name="ElementShortName">adcData_i[15:0]</obj_property>
-      <obj_property name="ObjectShortName">adcData_i[15:0]</obj_property>
+      <obj_property name="ElementShortName">adcData_i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">adcData_i[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/m_axis_tdata" type="array">
       <obj_property name="ElementShortName">m_axis_tdata[31:0]</obj_property>
@@ -92,8 +92,8 @@
       <obj_property name="ObjectShortName">dds_combined[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/axi_data" type="array">
-      <obj_property name="ElementShortName">axi_data[7:0][31:0]</obj_property>
-      <obj_property name="ObjectShortName">axi_data[7:0][31:0]</obj_property>
+      <obj_property name="ElementShortName">axi_data[18:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">axi_data[18:0][31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/triggers" type="array">
       <obj_property name="ElementShortName">triggers[31:0]</obj_property>
@@ -102,22 +102,6 @@
    <wvobject fp_name="/topmod_tb/topReg" type="array">
       <obj_property name="ElementShortName">topReg[31:0]</obj_property>
       <obj_property name="ObjectShortName">topReg[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/topmod_tb/freqOffsetReg" type="array">
-      <obj_property name="ElementShortName">freqOffsetReg[31:0]</obj_property>
-      <obj_property name="ObjectShortName">freqOffsetReg[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/topmod_tb/freqDiffReg" type="array">
-      <obj_property name="ElementShortName">freqDiffReg[31:0]</obj_property>
-      <obj_property name="ObjectShortName">freqDiffReg[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/topmod_tb/phaseControlSig" type="array">
-      <obj_property name="ElementShortName">phaseControlSig[31:0]</obj_property>
-      <obj_property name="ObjectShortName">phaseControlSig[31:0]</obj_property>
-   </wvobject>
-   <wvobject fp_name="/topmod_tb/regPhase" type="array">
-      <obj_property name="ElementShortName">regPhase[31:0]</obj_property>
-      <obj_property name="ObjectShortName">regPhase[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/regPhaseControl" type="array">
       <obj_property name="ElementShortName">regPhaseControl[31:0]</obj_property>
@@ -130,6 +114,8 @@
    <wvobject fp_name="/topmod_tb/startAXI" type="logic">
       <obj_property name="ElementShortName">startAXI</obj_property>
       <obj_property name="ObjectShortName">startAXI</obj_property>
+      <obj_property name="CustomSignalColor">#FF0000</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/addrIndex" type="other">
       <obj_property name="ElementShortName">addrIndex</obj_property>
@@ -148,12 +134,14 @@
       <obj_property name="ObjectShortName">CLK_T</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/axi_addresses" type="array">
-      <obj_property name="ElementShortName">axi_addresses[7:0][31:0]</obj_property>
-      <obj_property name="ObjectShortName">axi_addresses[7:0][31:0]</obj_property>
+      <obj_property name="ElementShortName">axi_addresses[18:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">axi_addresses[18:0][31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/triggers" type="array">
       <obj_property name="ElementShortName">triggers[31:0]</obj_property>
       <obj_property name="ObjectShortName">triggers[31:0]</obj_property>
+      <obj_property name="CustomSignalColor">#FFFFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/f0" type="array">
       <obj_property name="ElementShortName">f0[26:0]</obj_property>
@@ -168,8 +156,8 @@
       <obj_property name="ObjectShortName">regPhaseControl[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/phaseControlSig" type="array">
-      <obj_property name="ElementShortName">phaseControlSig[23:0]</obj_property>
-      <obj_property name="ObjectShortName">phaseControlSig[23:0]</obj_property>
+      <obj_property name="ElementShortName">phaseControlSig[31:0]</obj_property>
+      <obj_property name="ObjectShortName">phaseControlSig[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/topReg" type="array">
       <obj_property name="ElementShortName">topReg[31:0]</obj_property>
@@ -180,35 +168,20 @@
       <obj_property name="ObjectShortName">fifoReg[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/fifo_bus" type="array">
-      <obj_property name="ElementShortName">fifo_bus</obj_property>
-      <obj_property name="ObjectShortName">fifo_bus</obj_property>
-      <obj_property name="isExpanded"></obj_property>
-      <wvobject fp_name="/topmod_tb/uut/fifo_bus.m" type="array">
-         <obj_property name="ElementShortName">.m</obj_property>
-         <obj_property name="ObjectShortName">.m</obj_property>
-         <obj_property name="isExpanded"></obj_property>
-      </wvobject>
-      <wvobject fp_name="/topmod_tb/uut/fifo_bus.s" type="array">
-         <obj_property name="ElementShortName">.s</obj_property>
-         <obj_property name="ObjectShortName">.s</obj_property>
-         <obj_property name="isExpanded"></obj_property>
-      </wvobject>
+      <obj_property name="ElementShortName">fifo_bus[2:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_bus[2:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/enableFIFO" type="logic">
       <obj_property name="ElementShortName">enableFIFO</obj_property>
       <obj_property name="ObjectShortName">enableFIFO</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/phase" type="array">
-      <obj_property name="ElementShortName">phase[23:0]</obj_property>
-      <obj_property name="ObjectShortName">phase[23:0]</obj_property>
+      <obj_property name="ElementShortName">phase[31:0]</obj_property>
+      <obj_property name="ObjectShortName">phase[31:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/phaseValid" type="logic">
       <obj_property name="ElementShortName">phaseValid</obj_property>
       <obj_property name="ObjectShortName">phaseValid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/topmod_tb/uut/SaveDataFIFO/rst" type="logic">
-      <obj_property name="ElementShortName">rst</obj_property>
-      <obj_property name="ObjectShortName">rst</obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/comState" type="other">
       <obj_property name="ElementShortName">comState</obj_property>
@@ -217,19 +190,78 @@
    <wvobject fp_name="/topmod_tb/uut/bus_m" type="array">
       <obj_property name="ElementShortName">bus_m</obj_property>
       <obj_property name="ObjectShortName">bus_m</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/bus_s" type="array">
       <obj_property name="ElementShortName">bus_s</obj_property>
       <obj_property name="ObjectShortName">bus_s</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="/topmod_tb/uut/fifoData" type="array">
-      <obj_property name="ElementShortName">fifoData[15:0]</obj_property>
-      <obj_property name="ObjectShortName">fifoData[15:0]</obj_property>
+      <obj_property name="ElementShortName">fifoData[2:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">fifoData[2:0][31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/topmod_tb/uut/fifoValid" type="logic">
-      <obj_property name="ElementShortName">fifoValid</obj_property>
-      <obj_property name="ObjectShortName">fifoValid</obj_property>
+   <wvobject fp_name="/topmod_tb/uut/fifoValid" type="array">
+      <obj_property name="ElementShortName">fifoValid[2:0]</obj_property>
+      <obj_property name="ObjectShortName">fifoValid[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider475">
+      <obj_property name="label">TimingController</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/data_o" type="array">
+      <obj_property name="ElementShortName">data_o</obj_property>
+      <obj_property name="ObjectShortName">data_o</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/fifoState" type="other">
+      <obj_property name="ElementShortName">fifoState</obj_property>
+      <obj_property name="ObjectShortName">fifoState</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/empty" type="logic">
+      <obj_property name="ElementShortName">empty</obj_property>
+      <obj_property name="ObjectShortName">empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/full" type="logic">
+      <obj_property name="ElementShortName">full</obj_property>
+      <obj_property name="ObjectShortName">full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/wrTrig" type="logic">
+      <obj_property name="ElementShortName">wrTrig</obj_property>
+      <obj_property name="ObjectShortName">wrTrig</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/rdTrig" type="logic">
+      <obj_property name="ElementShortName">rdTrig</obj_property>
+      <obj_property name="ObjectShortName">rdTrig</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/delay" type="array">
+      <obj_property name="ElementShortName">delay[27:0]</obj_property>
+      <obj_property name="ObjectShortName">delay[27:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/state" type="other">
+      <obj_property name="ElementShortName">state</obj_property>
+      <obj_property name="ObjectShortName">state</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/fifo_i" type="array">
+      <obj_property name="ElementShortName">fifo_i[77:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_i[77:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/fifo_o" type="array">
+      <obj_property name="ElementShortName">fifo_o[77:0]</obj_property>
+      <obj_property name="ObjectShortName">fifo_o[77:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/enabled" type="logic">
+      <obj_property name="ElementShortName">enabled</obj_property>
+      <obj_property name="ObjectShortName">enabled</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/phase_c" type="array">
+      <obj_property name="ElementShortName">phase_c[31:0]</obj_property>
+      <obj_property name="ObjectShortName">phase_c[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/powControl" type="array">
+      <obj_property name="ElementShortName">powControl[26:0]</obj_property>
+      <obj_property name="ObjectShortName">powControl[26:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/topmod_tb/uut/TC/valid_i" type="logic">
+      <obj_property name="ElementShortName">valid_i</obj_property>
+      <obj_property name="ObjectShortName">valid_i</obj_property>
    </wvobject>
 </wave_config>

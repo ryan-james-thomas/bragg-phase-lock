@@ -14,7 +14,7 @@ architecture Behavioral of topmod_tb is
 
 component topmod is
     port (
-        clk             :   in  std_logic;
+        adcclk          :   in  std_logic;
         aresetn         :   in  std_logic;
  
         addr_i          :   in  unsigned(AXI_ADDR_WIDTH-1 downto 0);            --Address out
@@ -26,7 +26,7 @@ component topmod is
         m_axis_tdata    :   out std_logic_vector(31 downto 0);
         m_axis_tvalid   :   out std_logic;
         
-        adcData_i       :   in  std_logic_vector(15 downto 0)
+        adcData_i       :   in  std_logic_vector(31 downto 0)
     );
 end component;
 
@@ -46,7 +46,7 @@ END COMPONENT;
 constant CLK_T  :   time    :=  10 ns;
 
 signal clk, aresetn :   std_logic;
-signal adcData_i    :   std_logic_vector(15 downto 0);
+signal adcData_i    :   std_logic_vector(31 downto 0);
 
 signal m_axis_tdata :   std_logic_vector(31 downto 0);
 signal m_axis_tvalid:   std_logic;
@@ -73,22 +73,43 @@ signal dds_combined     :   std_logic_vector(31 downto 0);
 type t_axi_addr_array is array(natural range <>) of t_axi_addr;
 type t_axi_data_array is array(natural range <>) of t_axi_data;
 
-constant axi_addresses    :   t_axi_addr_array(7 downto 0)  :=  (0  =>  X"00000000",
+constant axi_addresses   :   t_axi_addr_array(18 downto 0)  :=  (0  =>  X"00000000",
                                                                  1  =>  X"00000004",
                                                                  2  =>  X"00000008",
                                                                  3  =>  X"0000000C",
                                                                  4  =>  X"00000010",
                                                                  5  =>  X"00000014",
                                                                  6  =>  X"00000018",
-                                                                 7  =>  X"0000001C");
+                                                                 7  =>  X"0000001C",
+                                                                 8  =>  X"00000020",
+                                                                 9  =>  X"00000024",
+                                                                10  =>  X"00000034",
+                                                                11  =>  X"00000034",
+                                                                12  =>  X"00000034",
+                                                                13  =>  X"00000034",
+                                                                14  =>  X"00000034",
+                                                                15  =>  X"00000034",
+                                                                16  =>  X"00000034",
+                                                                17  =>  X"00000034",
+                                                                18  =>  X"00000034");
                                                                  
-signal axi_data :   t_axi_data_array(7 downto 0);
+signal axi_data :   t_axi_data_array(18 downto 0);
 
-signal triggers :   t_param_reg;
-signal topReg, freqOffsetReg, freqDiffReg, phaseControlSig, regPhase, regPhaseControl, fifoReg  :   t_param_reg;
+signal triggers         :   t_param_reg;
+signal topReg           :   t_param_reg;
+signal f0               :   t_param_reg;
+signal dfSet            :   t_param_reg;
+signal dfmod            :   t_param_reg;
+signal phase_c          :   t_param_reg;
+signal regPhaseCalc     :   t_param_reg;
+signal regPhaseControl  :   t_param_reg;
+signal regControlGains  :   t_param_reg;
+signal fifoReg          :   t_param_reg;
+
 
 signal startAXI     :   std_logic;
 signal addrIndex    :   natural;
+signal startAddr    :   natural;
 
 signal axiState     :   t_status;   
 signal axiCount     :   natural;
@@ -110,7 +131,7 @@ end process;
 
 uut: topmod
 port map(
-    clk         =>  clk,
+    adcclk      =>  clk,
     aresetn     =>  aresetn,
     addr_i      =>  addr_i,
     writeData_i =>  writeData_i,
@@ -122,7 +143,7 @@ port map(
     adcData_i   =>  adcData_i
 );
 
-mixPhase_slv <= std_logic_vector(resize(shift_left(signed(freqDiffReg),3),mixPhase_slv'length));
+mixPhase_slv <= std_logic_vector(resize(shift_left(signed(dfSet),to_integer(unsigned(topReg(3 downto 0)))),mixPhase_slv'length));
 DataGet : MixerDDS_PhaseOffset
 PORT MAP (
     aclk => clk,
@@ -134,19 +155,31 @@ PORT MAP (
     m_axis_data_tvalid => ddsValid_o,
     m_axis_data_tdata => dds_o
 );
-adcData_i <= std_logic_vector(shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(1024,adcData_i'length));
+--adcData_i <= std_logic_vector(shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(0,adcData_i'length));
+adcData_i <= X"0000" & std_logic_vector(signed(dds_o(15 downto 0)));
 
 --
 -- Assign AXI registers
 --
 axi_data <= (0  =>  triggers,
              1  =>  topReg,
-             2  =>  freqOffsetReg,
-             3  =>  freqDiffReg,
-             4  =>  phaseControlSig,
-             5  =>  regPhase,
-             6  =>  regPhaseControl,
-             7  =>  fifoReg);
+             2  =>  f0,
+             3  =>  dfSet,
+             4  =>  dfmod,
+             5  =>  phase_c,
+             6  =>  regPhaseCalc,
+             7  =>  regPhaseControl,
+             8  =>  regControlGains,
+             9  =>  fifoReg,
+            10  =>  X"00000000",
+            11  =>  X"00020C4A",
+            12  =>  X"0000000a",
+            13  =>  X"000000F0",
+            14  =>  X"00020C8A",
+            15  =>  X"00000005",
+            16  =>  X"00000A00",
+            17  =>  X"00020CCA",
+            18  =>  X"00000008");
 
 AXITransfer: process(clk,aresetn) is
 begin
@@ -159,7 +192,7 @@ begin
             when idle =>
                 if startAXI = '1' then
                     axiState <= writing;
-                    addrIndex <= 0;
+                    addrIndex <= startAddr;
                 end if;
                 
             when writing =>
@@ -215,13 +248,17 @@ begin
     axiSingleWrite <= '0';
     ddsphase <= std_logic_vector(to_signed(0,ddsphase'length));
     ddsphaseValid <= '0';
+    startAXI <= '0';
+    startAddr <= 0;
     triggers <= (others => '0');
-    topReg <= X"00000030";
-    freqOffsetReg <= X"024dd2f2";
-    freqDiffReg <= X"00020c4a";
-    phaseControlSig <= X"00000000";
-    regPhase <= X"0000080a";
-    regPhaseControl <= X"0000000c";
+    topReg <= X"00000023";
+    f0 <= X"024dd2f2";
+    dfSet <= X"00020c4a";
+    dfmod <= X"00106250";
+    phase_c <= X"00000000";
+    regPhaseCalc <= X"0000000a";
+    regPhaseControl <= X"00000000";
+    regControlGains <= X"0b009632";
     fifoReg <= (others => '0');
     wait for 200 ns;
     aresetn <= '1';
@@ -230,27 +267,43 @@ begin
     startAXI <= '1';
     wait until rising_edge(clk);
     startAXI <= '0';
-    wait for 1 us;
+    wait for 2 us;
     wait until rising_edge(clk);
-    axiAddr2 <= X"0000001C";
-    axiData2 <= X"00000001";
+    axiAddr2 <= X"00000004";
+    axiData2 <= X"00000023";
+    startAxi <= '1';
     axiSingleWrite <= '1';
-    startAXI <= '1';
     wait until rising_edge(clk);
     startAXI <= '0';
     wait until axiState = idle;
     axiSingleWrite <= '0';
     wait for 5 us;
     wait until rising_edge(clk);
-    axiAddr2 <= X"01000004";
-    axiSingleRead <= '1';
+    axiAddr2 <= X"00000000";
+    axiData2 <= X"00000002";
+    axiSingleWrite <= '1';
     startAXI <= '1';
     wait until rising_edge(clk);
     startAXI <= '0';
     wait until axiState = idle;
-    axiSingleRead <= '0';
-    
-    
+    axiSingleWrite <= '0';
+    wait for 1 us;
+    wait until rising_edge(clk);
+    startAXI <= '1';
+    startAddr <= 10;
+    wait until rising_edge(clk);
+    startAXI <= '0';
+    wait for 2 us;
+    wait until rising_edge(clk);
+    axiAddr2 <= X"00000000";
+    axiData2 <= X"00000002";
+    axiSingleWrite <= '1';
+    startAXI <= '1';
+    wait until rising_edge(clk);
+    startAXI <= '0';
+    wait until axiState = idle;
+    axiSingleWrite <= '0';
+    wait for 1 us;
     wait;
 end process;
 

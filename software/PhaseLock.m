@@ -28,8 +28,6 @@ classdef PhaseLock < handle
         Ki          %Integral gain
         divisor     %Overall divisor
         
-        % Read only
-        samplesCollected
     end
     
     properties(SetAccess = protected)
@@ -45,7 +43,7 @@ classdef PhaseLock < handle
         phaseGainReg
         
         % Read-only register
-        sampleReg
+        auxReg
         
         %Write-only register
         timingReg
@@ -85,7 +83,7 @@ classdef PhaseLock < handle
             %
             % Read-only registers
             %
-            self.sampleReg = PhaseLockRegister('01000000',self.conn);
+            self.auxReg = PhaseLockRegister('01000000',self.conn);
             %
             % Write-only registers
             %
@@ -147,11 +145,6 @@ classdef PhaseLock < handle
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
             
-            %Read-only
-            self.samplesCollected = PhaseLockParameter([0,12],self.sampleReg)...
-                .setLimits('lower',0,'upper',2^13)...
-                .setFunctions('to',@(x) x,'from',@(x) x);
-            
         end
         
         function self = setDefaults(self,varargin)
@@ -170,7 +163,7 @@ classdef PhaseLock < handle
             %
             % Phase calculation
             %
-            self.cicRate.set(8);
+            self.cicRate.set(10);
             %
             % Phase control
             %
@@ -180,9 +173,6 @@ classdef PhaseLock < handle
             self.Kp.set(50);
             self.Ki.set(140);
             self.divisor.set(11);
-            
-            self.samplesCollected.set(0);
-
         end
         
         function self = check(self)
@@ -230,9 +220,33 @@ classdef PhaseLock < handle
             self.Kp.get;
             self.Ki.get;
             self.divisor.get;
-            %Get number of collected samples
-            self.samplesCollected.read;
-            
+        end
+        
+        function data = readOnly(self)
+            %df
+            self.auxReg.addr = '01000000';
+            self.auxReg.read;
+            data.df = double(self.auxReg.value)/2^self.DDS_WIDTH*125;
+            %dfmod_i
+            self.auxReg.addr = '01000004';
+            self.auxReg.read;
+            data.dfmod_i = double(self.auxReg.value)/2^self.DDS_WIDTH*125;
+            %tc_df
+            self.auxReg.addr = '01000008';
+            self.auxReg.read;
+            data.tc_df = double(self.auxReg.value)/2^self.DDS_WIDTH*125;
+            %tc_pow
+            self.auxReg.addr = '0100000C';
+            self.auxReg.read;
+            data.tc_pow = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
+            %phase_c
+            self.auxReg.addr = '01000010';
+            self.auxReg.read;
+            data.phasec = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
+            %Debug
+            self.auxReg.addr = '01000014';
+            self.auxReg.read;
+            data.debug = dec2bin(self.auxReg.value,8);
         end
         
         function self = start(self)
@@ -274,17 +288,15 @@ classdef PhaseLock < handle
             freq = uint32(freq*1e6/self.CLK*2^self.DDS_WIDTH);
             
             addr = self.timingReg.addr;
-            d = zeros(numel(dt),1,'uint32');
+            d = zeros(3*numel(dt)+1,1,'uint32');
             d(1) = uint32(addr);
             mm = 2;
             for nn = 1:numel(dt)
-                if mod(nn-1,3) == 0
-                    d(mm) = typecast(ph(nn),'uint32');
-                elseif mod(nn-1,3) == 1
-                    d(mm) = typecast(freq(nn),'uint32');
-                elseif mod(nn-1,3) == 2
-                    d(mm) = typecast(dt(nn),'uint32');
-                end
+                d(mm) = typecast(ph(nn),'uint32');
+                mm = mm + 1;
+                d(mm) = typecast(freq(nn),'uint32');
+                mm = mm + 1;
+                d(mm) = typecast(dt(nn),'uint32');
                 mm = mm + 1;
             end
             self.resetTC;
@@ -370,14 +382,15 @@ classdef PhaseLock < handle
                     varargout{1} = v;
                 case 'phase'
                     data.ph = [];
-                    data.act = [];
+                    data.sum = [];
                     data.dds = [];
                     if bits(1)
                         data.ph = double(typecast(d(:,1),'int32'))/2^(PhaseLock.CORDIC_WIDTH-3)*pi;
                     end
                     if bits(2)
                         idx = sum(bits(1:2));
-                        data.act = unwrap(double(d(:,idx))/2^(PhaseLock.CORDIC_WIDTH-3)*pi);
+%                         data.act = unwrap(double(d(:,idx))/2^(PhaseLock.CORDIC_WIDTH-3)*pi);
+                        data.sum = double(typecast(d(:,idx),'int32'))/2^(PhaseLock.CORDIC_WIDTH-3)*pi;
                     end
                     if bits(3)
                         idx = sum(bits(1:3));   

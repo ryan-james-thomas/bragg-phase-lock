@@ -19,6 +19,7 @@ entity PhaseControl is
 
         dds_phase_o :   out t_dds_phase;
         act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
+        phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
     );
 end PhaseControl;
@@ -89,6 +90,7 @@ port map(
 
 dds_phase_o <= dds_phase when enable = '1' else resizePhase(phase_c);
 valid_o <= validPI when enable = '1' else validWrap;
+phaseSum_o <= phaseSum;
 --
 -- Unwrap phase
 --
