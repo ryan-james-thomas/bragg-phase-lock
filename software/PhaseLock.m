@@ -358,7 +358,7 @@ classdef PhaseLock < handle
             elseif ~isempty(d.dds)
                 N = numel(d.dds);
             end
-            d.t = dt*(0:(N-1));
+            d.t = dt*(0:(N-1))';
         end
         
         function varargout = convertData(raw,method,streams)
