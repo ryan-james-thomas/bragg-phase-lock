@@ -7,7 +7,7 @@ use work.AXI_Bus_Package.all;
  
 entity topmod is
     port (
---        sysclk          :   in  std_logic;
+        sysclk          :   in  std_logic;
         adcclk          :   in  std_logic;
         aresetn         :   in  std_logic;
  
