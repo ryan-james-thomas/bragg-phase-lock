@@ -25,6 +25,8 @@ constant AXI_SLAVE_WIDTH    :   natural :=  AXI_DATA_WIDTH + 2;
 --
 subtype t_axi_addr is unsigned(AXI_ADDR_WIDTH-1 downto 0);
 subtype t_axi_data is std_logic_vector(AXI_DATA_WIDTH-1 downto 0);
+type t_axi_addr_array is array(natural range <>) of t_axi_addr;
+type t_axi_data_array is array(natural range <>) of t_axi_data;
 
 --
 -- Defines a data bus controlled by the master

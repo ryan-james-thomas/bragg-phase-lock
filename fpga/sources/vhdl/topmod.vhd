@@ -64,19 +64,6 @@ component PhaseCalculation is
     );
 end component;
 
-component BlockMemHandler is
-    port(
-        clk         :   in  std_logic;
-        aresetn     :   in  std_logic;
-        
-        data_i      :   in  std_logic_vector;
-        valid_i     :   in  std_logic;
-        
-        bus_m       :   in  t_mem_bus_master;
-        bus_s       :   out t_mem_bus_slave
-    );
-end component;
-
 component PhaseControl is
     port(
         clk         :   in  std_logic;
@@ -98,9 +85,9 @@ end component;
 
 component FIFOHandler is
     port(
---        wr_clk      :   in  std_logic;
---        rd_clk      :   in  std_logic;
-        clk         :   in  std_logic;
+        wr_clk      :   in  std_logic;
+        rd_clk      :   in  std_logic;
+--        clk         :   in  std_logic;
         aresetn     :   in  std_logic;
         
         data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
@@ -217,6 +204,71 @@ tcStart <= triggers(1);                     --Start the timing controller
 --tcReset <= triggers(3);                     --Resets the timing controller FIFO
 
 --
+-- DDS output signals.  dfSet is the static frequency difference set by the user
+-- pow1 and ftw1 are connected to OUT1 on the board as the least-significant 16 bits
+-- ftw2 is connected to OUT2 on the board as the most-significant 16 bits
+--
+df <= dfSet when useManual = '1' else tc_o.df;  --Use dfSet when manual (set in parse process) or timing controller value
+ftw1 <= f0 + df;
+ftw2 <= f0 - df;
+DDS_2Channel: DualChannelDDS
+port map(
+    clk             =>  adcclk,
+    aresetn         =>  aresetn,
+    pow1            =>  powControl,
+    ftw1            =>  ftw1,
+    ftw2            =>  ftw2,
+    m_axis_tvalid   =>  m_axis_tvalid,
+    m_axis_tdata    =>  m_axis_tdata
+);
+--
+-- Phase calculation
+--
+adc <= signed(adcData_i(adc'length-1 downto 0));
+--
+-- Demodulation frequency is either a shifted version of the one used for freq generation
+-- or it's a fixed one set by the user. The fixed one is allowed only for manual control
+--
+dfmod_i <= shift_left(df,to_integer(dfShift)) when (useSetDemod = '0' or useManual = '0') else dfmod;
+PhaseCalc: PhaseCalculation
+port map(
+    clk         =>  adcclk,
+    aresetn     =>  aresetn,
+    adcData_i   =>  adc,
+    freq_i      =>  dfmod_i,
+    reg0        =>  regPhaseCalc,
+    regValid_i  =>  regPhaseValid,
+    phase_o     =>  phase,
+    valid_o     =>  phaseValid
+);
+
+--
+-- Phase control
+-- Phase as calculated from PhaseCalc is passed to this module.  The control signal is either the manually supplied
+-- signal or the one from the TimingController.  The output phase is connected to the input of the 2-channel DDS
+-- module.  When the PI loop inside MainPhaseControl is disabled, the output phase that is connected t the 2-channel
+-- DDS module is fixed at 0.  
+--
+phase_c <= phaseControlSig when useManual = '1' else tc_o.pow;
+MainPhaseControl: PhaseControl
+port map(
+    clk         =>  adcclk,
+    aresetn     =>  aresetn,
+    reg0        =>  regPhaseControl,
+    gains       =>  regControlGains,
+    phase_i     =>  phase,
+    valid_i     =>  phaseValid,
+    phase_c     =>  phase_c,
+    dds_phase_o =>  powControl,
+    act_phase_o =>  actPhase,
+    phaseSum_o  =>  phaseSum,
+    valid_o     =>  powControlValid
+);
+               
+--
+-- FIFO buffering for long data sets
+--
+--
 -- Extends FIFO reset signals
 --
 ResetExtend: process(adcclk,aresetn) is
@@ -241,69 +293,10 @@ begin
         end if;
     end if;
 end process;
-
 --
--- DDS output signals
---
-df <= dfSet when useManual = '1' else tc_o.df;  --Use dfSet when manual (set in parse process) or timing controller value
-ftw1 <= f0 + df;
-ftw2 <= f0 - df;
-DDS_2Channel: DualChannelDDS
-port map(
-    clk             =>  adcclk,
-    aresetn         =>  aresetn,
-    pow1            =>  powControl,
-    ftw1            =>  ftw1,
-    ftw2            =>  ftw2,
-    m_axis_tvalid   =>  m_axis_tvalid,
-    m_axis_tdata    =>  m_axis_tdata
-);
-
---
--- Phase calculation
---
-adc <= signed(adcData_i(adc'length-1 downto 0));
---
--- Demodulation frequency is either a shifted version of the one used for freq generation
--- or its a fixed one set by the user. The fixed one is allowed only for manual control
---
-dfmod_i <= shift_left(df,to_integer(dfShift)) when (useSetDemod = '0' or useManual = '0') else dfmod;
-PhaseCalc: PhaseCalculation
-port map(
-    clk         =>  adcclk,
-    aresetn     =>  aresetn,
-    adcData_i   =>  adc,
-    freq_i      =>  dfmod_i,
-    reg0        =>  regPhaseCalc,
-    regValid_i  =>  regPhaseValid,
-    phase_o     =>  phase,
-    valid_o     =>  phaseValid
-);
-
---
--- Phase control
---
-phase_c <= phaseControlSig when useManual = '1' else tc_o.pow;
-MainPhaseControl: PhaseControl
-port map(
-    clk         =>  adcclk,
-    aresetn     =>  aresetn,
-    reg0        =>  regPhaseControl,
-    gains       =>  regControlGains,
-    phase_i     =>  phase,
-    valid_i     =>  phaseValid,
-    phase_c     =>  phase_c,
-    dds_phase_o =>  powControl,
-    act_phase_o =>  actPhase,
-    phaseSum_o  =>  phaseSum,
-    valid_o     =>  powControlValid
-);
-               
---
--- FIFO buffering for long data sets
-
---
--- Generate FIFO buffers
+-- Generate FIFO buffers. We save the measured phase, the phase unwrapped phase relative to the phase
+-- when the PI controller is enabled, and the output phase generated by the PI controller (which is
+-- connected directly to the 2-channel DDS module to control the OUT1 phase).
 --
 enableFIFO <= fifoReg(0) or tc_o.enable;
 fifoData(0) <= std_logic_vector(resize(phase,FIFO_WIDTH));
@@ -315,9 +308,9 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
     fifoValid(I) <= powControlValid and enableFIFO;
     PhaseMeas_FIFO_NORMAL_X: FIFOHandler
     port map(
---            wr_clk      =>  adcclk,
---            rd_clk      =>  sysclk,
-        clk         =>  adcclk,
+        wr_clk      =>  adcclk,
+        rd_clk      =>  sysclk,
+--        clk         =>  adcclk,
         aresetn     =>  aresetn,
         data_i      =>  fifoData(I),
         valid_i     =>  fifoValid(I),
@@ -349,7 +342,7 @@ bus_m.valid <= dataValid_i;
 bus_m.data <= writeData_i;
 readData_o <= bus_s.data;
 resp_o <= bus_s.resp;
-Parse: process(adcclk,aresetn) is
+Parse: process(sysclk,aresetn) is
 begin
     if aresetn = '0' then
         comState <= idle;
@@ -372,7 +365,7 @@ begin
         
         tcValid <= '0';
         tcData <= (others => '0');
-    elsif rising_edge(adcclk) then
+    elsif rising_edge(sysclk) then
         FSM: case(comState) is
             when idle =>
                 triggers <= (others => '0');

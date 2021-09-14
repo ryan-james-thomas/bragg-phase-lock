@@ -47,6 +47,7 @@ type t_fifo_state_local is (pow,freq,duration);
 signal fifo_i   :   t_fifo_local;
 signal fifoCount:   unsigned(1 downto 0);
 signal fifoState:   t_fifo_state_local;
+signal valid    :   std_logic;
 
 signal empty, full   :   std_logic;
 signal wrTrig, rdTrig       :   std_logic;
@@ -64,6 +65,7 @@ debug_o(3) <= enabled;
 --
 -- Generate data words for FIFO input
 --
+rising_sync(clk,aresetn,valid_i,valid);
 MakeFIFOInputs: process(clk,aresetn) is
 begin
     if aresetn = '0' then
@@ -77,7 +79,7 @@ begin
             wrTrig <= '0';
             fifoState <= pow;
             fifo_i <= (others => '0');
-        elsif valid_i = '1' then
+        elsif valid = '1' then
             if fifoState = pow then
                 fifo_i(FIFO_POW_WIDTH - 1 downto 0) <= std_logic_vector(resize(signed(data_i),FIFO_POW_WIDTH));
                 fifoState <= freq;

@@ -167,6 +167,19 @@ constant INIT_TIMING_CONTROL    :   t_timing_control    :=  (enable => '0',
 
 
 function resizePhase ( ARG: signed) return t_dds_phase;
+function convertPhase(arg: t_phase) return t_dds_phase;
+function convertPhase(arg: t_dds_phase) return t_phase;
+procedure signal_sync(
+    signal clk_i   :   in       std_logic;
+    signal aresetn :   in       std_logic;
+    signal trig_i  :   in       std_logic;
+    signal trig_o  :   inout    std_logic_vector(1 downto 0));
+
+procedure rising_sync(
+    signal clk_i   :   in       std_logic;
+    signal aresetn :   in       std_logic;
+    signal trig_i  :   in       std_logic;
+    signal trig_o  :   inout    std_logic);
 
 end CustomDataTypes;
 
@@ -189,5 +202,46 @@ begin
     RESULT := shift_left(resize(act2pi,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3);
     return RESULT;
 end resizePhase;
+
+function convertPhase(arg: t_phase) return t_dds_phase is
+    variable RESULT     :   t_dds_phase;
+begin
+    RESULT  :=  unsigned(shift_left(resize(arg,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3));
+    return RESULT;
+end convertPhase;
+
+function convertPhase(arg: t_dds_phase) return t_phase is
+    variable RESULT     :   t_phase;
+begin
+    RESULT  :=  resize(shift_right(signed(arg),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3),32);
+    return RESULT;
+end convertPhase;
+
+procedure signal_sync(
+    signal clk_i   :   in       std_logic;
+    signal aresetn :   in       std_logic;
+    signal trig_i  :   in       std_logic;
+    signal trig_o  :   inout    std_logic_vector(1 downto 0)) is
+begin
+    if aresetn = '0' then
+        trig_o <= (others => trig_i);
+    elsif rising_edge(clk_i) then
+        trig_o <= trig_o(0) & trig_i;
+    end if;
+end signal_sync; 
+
+procedure rising_sync(
+    signal clk_i   :   in       std_logic;
+    signal aresetn :   in       std_logic;
+    signal trig_i  :   in       std_logic;
+    signal trig_o  :   inout    std_logic) is
+begin
+    if aresetn = '0' then
+        trig_o <= trig_i;
+    elsif rising_edge(clk_i) then
+        trig_o <= not(trig_o) and trig_i;
+--        trig_o <= trig_o(0) & trig_i;
+    end if;
+end rising_sync;
 
 end CustomDataTypes;

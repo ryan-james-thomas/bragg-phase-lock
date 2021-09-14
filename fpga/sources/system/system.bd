@@ -2183,6 +2183,10 @@
                     "value": "AXI4LITE",
                     "value_src": "constant"
                   },
+                  "FREQ_HZ": {
+                    "value": "125000000",
+                    "value_src": "user_prop"
+                  },
                   "ID_WIDTH": {
                     "value": "0",
                     "value_src": "constant"
@@ -2266,6 +2270,18 @@
                   "MAX_BURST_LENGTH": {
                     "value": "1",
                     "value_src": "auto"
+                  },
+                  "CLK_DOMAIN": {
+                    "value": "system_processing_system7_0_0_FCLK_CLK0",
+                    "value_src": "default_prop"
+                  },
+                  "NUM_READ_THREADS": {
+                    "value": "4",
+                    "value_src": "const_prop"
+                  },
+                  "NUM_WRITE_THREADS": {
+                    "value": "4",
+                    "value_src": "const_prop"
                   }
                 },
                 "port_maps": {
@@ -2366,6 +2382,14 @@
                   "ASSOCIATED_RESET": {
                     "value": "s_axi_aresetn",
                     "value_src": "constant"
+                  },
+                  "FREQ_HZ": {
+                    "value": "125000000",
+                    "value_src": "user_prop"
+                  },
+                  "CLK_DOMAIN": {
+                    "value": "system_processing_system7_0_0_FCLK_CLK0",
+                    "value_src": "default_prop"
                   }
                 }
               },
@@ -2584,7 +2608,7 @@
                 "parameters": {
                   "FREQ_HZ": {
                     "value": "125000000",
-                    "value_src": "constant"
+                    "value_src": "user_prop"
                   },
                   "TDATA_NUM_BYTES": {
                     "value": "4",
@@ -2617,6 +2641,10 @@
                   "HAS_TLAST": {
                     "value": "0",
                     "value_src": "constant"
+                  },
+                  "CLK_DOMAIN": {
+                    "value": "system_AXIS_Red_Pitaya_ADC_0_0_adc_clk",
+                    "value_src": "default_prop"
                   }
                 },
                 "port_maps": {
@@ -2641,12 +2669,34 @@
                   "ASSOCIATED_BUSIF": {
                     "value": "m_axis",
                     "value_src": "constant"
+                  },
+                  "FREQ_HZ": {
+                    "value": "125000000",
+                    "value_src": "user_prop"
+                  },
+                  "CLK_DOMAIN": {
+                    "value": "system_AXIS_Red_Pitaya_ADC_0_0_adc_clk",
+                    "value_src": "default_prop"
                   }
                 }
               },
               "ddr_clk": {
                 "type": "clk",
-                "direction": "I"
+                "direction": "I",
+                "parameters": {
+                  "FREQ_HZ": {
+                    "value": "250000000",
+                    "value_src": "ip_prop"
+                  },
+                  "PHASE": {
+                    "value": "0.0",
+                    "value_src": "ip_prop"
+                  },
+                  "CLK_DOMAIN": {
+                    "value": "/DAC_Output/clk_wiz_0_clk_out1",
+                    "value_src": "ip_prop"
+                  }
+                }
               },
               "locked": {
                 "direction": "I"
@@ -2825,7 +2875,12 @@
           },
           "adc_clk": {
             "type": "clk",
-            "direction": "O"
+            "direction": "O",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "125000000"
+              }
+            }
           },
           "adc_csn": {
             "direction": "O"

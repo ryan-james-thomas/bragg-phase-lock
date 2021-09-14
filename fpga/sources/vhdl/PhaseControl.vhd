@@ -88,6 +88,23 @@ port map(
     act_o       =>  act_phase_o
 );
 
+--OutputClocking: process(clk,aresetn) is
+--begin
+--    if aresetn = '0' then
+--        dds_phase_o <= (others => '0');
+--        valid_o <= '0';
+--        phaseSum_o <= (others => '0');
+--    elsif rising_edge(clk) then
+--        if enable = '1' then
+--            dds_phase_o <= dds_phase;
+--            valid_o <= validPI;
+--        else
+--            dds_phase_o <= resizePhase(phase_c);
+--            valid_o <= validWrap;
+--        end if;
+--        phaseSum_o <= phaseSum;
+--    end if;
+--end process;
 dds_phase_o <= dds_phase when enable = '1' else resizePhase(phase_c);
 valid_o <= validPI when enable = '1' else validWrap;
 phaseSum_o <= phaseSum;

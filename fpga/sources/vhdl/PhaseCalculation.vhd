@@ -97,6 +97,7 @@ signal scaleFactor      :   unsigned(3 downto 0);
 -- Downsampling/fast averaging signals
 --
 signal cicRate              :   unsigned(7 downto 0);
+signal regValid             :   std_logic;
 signal cicConfig_i          :   std_logic_vector(15 downto 0);
 signal cicI_i, cicQ_i       :   std_logic_vector(23 downto 0);
 
@@ -165,13 +166,13 @@ cicConfig_i(11 downto 0) <= std_logic_vector(shift_left(to_unsigned(1,12),to_int
 cicConfig_i(15 downto 12) <= (others => '0');
 cicI_i <= std_logic_vector(resize(signed(I),cicI_i'length));
 cicQ_i <= std_logic_vector(resize(signed(Q),cicQ_i'length));
-
+rising_sync(clk,aresetn,regValid_i,regValid);
 I_decimate: CIC_Decimate
 port map(
     aclk                    => clk,
     aresetn                 => aresetn,
     s_axis_config_tdata     => cicConfig_i,
-    s_axis_config_tvalid    => regValid_i,
+    s_axis_config_tvalid    => regValid,
     s_axis_config_tready    => open,
     s_axis_data_tdata       => cicI_i,
     s_axis_data_tvalid      => '1',
@@ -185,7 +186,7 @@ port map(
     aclk                    => clk,
     aresetn                 => aresetn,
     s_axis_config_tdata     => cicConfig_i,
-    s_axis_config_tvalid    => regValid_i,
+    s_axis_config_tvalid    => regValid,
     s_axis_config_tready    => open,
     s_axis_data_tdata       => cicQ_i,
     s_axis_data_tvalid      => '1',

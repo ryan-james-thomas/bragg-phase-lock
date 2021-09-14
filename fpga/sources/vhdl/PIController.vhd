@@ -144,6 +144,8 @@ begin
         multCount <= X"0";
         err0 <= (others => '0');
         err1 <= (others => '0');
+        prop_i <= (others => '0');
+        int_i <= (others => '0');
         dds_phase <= (others => '0');
         valid_o <= '0';
     elsif rising_edge(clk) then

@@ -5,22 +5,26 @@ classdef PhaseLock < handle
     end
     
     properties(SetAccess = immutable)
-        conn
-        
+        conn        %ConnectionClient object for communicating with device
+        %
         % Top-level properties
+        %
         shift       %Shift right by this
         useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
         useManual   %True to use manual values, false to use timing controller values
-        
-        %Frequency parameters
+        %
+        % Frequency parameters
+        %
         f0          %Center frequency
         df          %Difference frequency
         demod       %Demodulation frequency
-        
+        %
         % Phase calculation parameters
+        %
         cicRate     %Log2(CIC rate reduction)
-        
+        %
         % Phase control parameters
+        %
         phasec      %Manual control phase
         enableFB    %Enable feedback
         polarity    %Feedback polarity
@@ -31,117 +35,121 @@ classdef PhaseLock < handle
     end
     
     properties(SetAccess = protected)
+        %
         % R/W registers
-        trigReg
-        topReg
-        freqOffsetReg
-        freqDiffReg
-        freqDemodReg
-        phaseControlSigReg
-        phaseCalcReg
-        phaseControlReg
-        phaseGainReg
-        
+        %
+        trigReg             %Trigger register
+        topReg              %Top-level register
+        freqOffsetReg       %Register for common DDS frequency
+        freqDiffReg         %Register for difference between DDS frequencies
+        freqDemodReg        %Fixed demodulation frequency
+        phaseControlSigReg  %Register for the phase control signal
+        phaseCalcReg        %Register for calculating phase from ADC data
+        phaseControlReg     %Register for PI control settings
+        phaseGainReg        %Register for PI gain settings
+        %
         % Read-only register
+        %
         auxReg
-        
-        %Write-only register
+        %
+        % Write-only register
+        %
         timingReg
     end
     
     properties(Constant)
-        CLK = 125e6;
-        HOST_ADDRESS = '172.22.250.94';
-        DDS_WIDTH = 27;
-        CORDIC_WIDTH = 24;
+        CLK = 125e6;                    %Clock frequency of the board
+        HOST_ADDRESS = '192.168.1.109'; %Default socket server address
+        DDS_WIDTH = 27;                 %Bit width of the DDS phase inputs
+        CORDIC_WIDTH = 24;              %Bit width of the measured phase
     end
     
     methods
         function self = PhaseLock(varargin)
             if numel(varargin)==1
-                self.conn = PhaseLockClient(varargin{1});
+                self.conn = ConnectionClient(varargin{1});
             else
-                self.conn = PhaseLockClient(self.HOST_ADDRESS);
+                self.conn = ConnectionClient(self.HOST_ADDRESS);
             end
             
             % R/W registers
-            self.trigReg = PhaseLockRegister('0',self.conn);
-            self.topReg = PhaseLockRegister('4',self.conn);
+            self.trigReg = DeviceRegister('0',self.conn);
+            self.topReg = DeviceRegister('4',self.conn);
             %
             % Freq generation registers
             %
-            self.freqOffsetReg = PhaseLockRegister('8',self.conn);
-            self.freqDiffReg = PhaseLockRegister('C',self.conn);
-            self.freqDemodReg = PhaseLockRegister('10',self.conn);
+            self.freqOffsetReg = DeviceRegister('8',self.conn);
+            self.freqDiffReg = DeviceRegister('C',self.conn);
+            self.freqDemodReg = DeviceRegister('10',self.conn);
             %
             % Phase control/calculation registers
             %
-            self.phaseControlSigReg = PhaseLockRegister('14',self.conn);
-            self.phaseCalcReg = PhaseLockRegister('18',self.conn);
-            self.phaseControlReg = PhaseLockRegister('1C',self.conn);
-            self.phaseGainReg = PhaseLockRegister('20',self.conn);
+            self.phaseControlSigReg = DeviceRegister('14',self.conn);
+            self.phaseCalcReg = DeviceRegister('18',self.conn);
+            self.phaseControlReg = DeviceRegister('1C',self.conn);
+            self.phaseGainReg = DeviceRegister('20',self.conn);
             %
             % Read-only registers
             %
-            self.auxReg = PhaseLockRegister('01000000',self.conn);
+            self.auxReg = DeviceRegister('01000000',self.conn);
             %
             % Write-only registers
             %
-            self.timingReg = PhaseLockRegister('00000034',self.conn);
+            self.timingReg = DeviceRegister('00000034',self.conn);
 
             %
             % Top-level parameters
             %
-            self.shift = PhaseLockParameter([0,3],self.topReg)...
+            self.shift = DeviceParameter([0,3],self.topReg)...
                 .setLimits('lower',0,'upper',15)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.useSetDemod = PhaseLockParameter([4,4],self.topReg)...
+            self.useSetDemod = DeviceParameter([4,4],self.topReg)...
                 .setLimits('lower',0,'upper',1);
-            self.useManual = PhaseLockParameter([5,5],self.topReg)...
+            self.useManual = DeviceParameter([5,5],self.topReg)...
                 .setLimits('lower',0,'upper',1);
             %
-            %Frequency generation
+            % Frequency generation
             %
-            self.f0 = PhaseLockParameter([0,26],self.freqOffsetReg)...
+            self.f0 = DeviceParameter([0,26],self.freqOffsetReg)...
                 .setLimits('lower',0,'upper',50)...
                 .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
-            self.df = PhaseLockParameter([0,26],self.freqDiffReg)...
+            self.df = DeviceParameter([0,26],self.freqDiffReg)...
                 .setLimits('lower',0,'upper',50)...
                 .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
-            self.demod = PhaseLockParameter([0,26],self.freqDemodReg)...
+            self.demod = DeviceParameter([0,26],self.freqDemodReg)...
                 .setLimits('lower',0,'upper',2^27)...
-                .setFunctions('to',@(x) x,'from',@(x) x);
+                .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
             %
             % Phase calculation
             %
-            self.cicRate = PhaseLockParameter([0,7],self.phaseCalcReg)...
+            self.cicRate = DeviceParameter([0,7],self.phaseCalcReg)...
                 .setLimits('lower',7,'upper',11)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
             %
             % Phase control signal
             %
-            self.phasec = PhaseLockParameter([0,31],self.phaseControlSigReg)...
+            self.phasec = DeviceParameter([0,31],self.phaseControlSigReg)...
                 .setLimits('lower',-pi,'upper',pi)...
                 .setFunctions('to',@(x) typecast(int32(x/pi*2^(self.CORDIC_WIDTH-3)),'uint32'),'from',@(x) x/2^(self.CORDIC_WIDTH-3)*pi);
             %
             % Phase control parameters
             %
-            self.polarity = PhaseLockParameter([0,0],self.phaseControlReg)...
+            self.polarity = DeviceParameter([0,0],self.phaseControlReg)...
                 .setLimits('lower',0,'upper',1)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.enableFB = PhaseLockParameter([1,1],self.phaseControlReg)...
+            self.enableFB = DeviceParameter([1,1],self.phaseControlReg)...
                 .setLimits('lower',0,'upper',1)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
             %
             % Phase controller gains
             %
-            self.Kp = PhaseLockParameter([0,7],self.phaseGainReg)...
+            self.Kp = DeviceParameter([0,7],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.Ki = PhaseLockParameter([8,15],self.phaseGainReg)...
+            self.Ki = DeviceParameter([8,15],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            self.divisor = PhaseLockParameter([24,31],self.phaseGainReg)...
+            self.divisor = DeviceParameter([24,31],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
             
@@ -159,7 +167,7 @@ classdef PhaseLock < handle
             %
             self.f0.set(35);
             self.df.set(0.125);
-            self.demod.set(self.df.intValue*8);
+            self.demod.set(1);
             %
             % Phase calculation
             %
@@ -307,30 +315,35 @@ classdef PhaseLock < handle
             strwidth = 36;
             fprintf(1,'PhaseLock object with properties:\n');
             fprintf(1,'\t Registers\n');
-            self.topReg.makeString('topReg',strwidth);
-            self.freqOffsetReg.makeString('freqOffsetReg',strwidth);
-            self.freqDiffReg.makeString('freqDiffReg',strwidth);
-            self.freqDemodReg.makeString('freqDemodReg',strwidth);
-            self.phaseControlSigReg.makeString('phaseControlSigReg',strwidth);
-            self.phaseCalcReg.makeString('phaseCalcReg',strwidth);
-            self.phaseControlReg.makeString('phaseControlReg',strwidth);
-            self.phaseGainReg.makeString('phaseGainReg',strwidth);
+            self.topReg.print('topReg',strwidth);
+            self.freqOffsetReg.print('freqOffsetReg',strwidth);
+            self.freqDiffReg.print('freqDiffReg',strwidth);
+            self.freqDemodReg.print('freqDemodReg',strwidth);
+            self.phaseControlSigReg.print('phaseControlSigReg',strwidth);
+            self.phaseCalcReg.print('phaseCalcReg',strwidth);
+            self.phaseControlReg.print('phaseControlReg',strwidth);
+            self.phaseGainReg.print('phaseGainReg',strwidth);
+            fprintf(1,'\t ----------------------------------\n');
+            fprintf(1,'\t Top-level parameters\n');
+            self.shift.print('Freq. difference shift',strwidth,'%d');
+            self.useSetDemod.print('Use fixed demod freq.',strwidth,'%d');
+            self.useManual.print('Use manual',strwidth,'%d');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Frequency Parameters\n');
-            fprintf(1,'\t\t%25s: %d\n','Shift',self.shift.value);
-            fprintf(1,'\t\t%25s: %d\n','Use Set Demod',self.useSetDemod.value);
-            fprintf(1,'\t\t%25s: %d\n','Use Manual',self.useManual.value);
-            fprintf(1,'\t\t%25s: %.3f\n','Center Frequency [MHz]',self.f0.value);
-            fprintf(1,'\t\t%25s: %.3f\n','Difference Freq [MHz]',self.df.value);
-            fprintf(1,'\t\t%25s: %d\n','Demod Freq [int]',self.df.value);
-            fprintf(1,'\t\t%25s: %d\n','CIC Rate (log2)',self.cicRate.value);
-            fprintf(1,'\t\t%25s: %.3f\n','Phase control signal',self.phasec.value);
-            fprintf(1,'\t\t%25s: %d\n','Enable FB',self.enableFB.value);
-            fprintf(1,'\t\t%25s: %d\n','Polarity',self.polarity.value);
-            fprintf(1,'\t\t%25s: %d\n','Kp',self.Kp.value);
-            fprintf(1,'\t\t%25s: %d\n','Ki',self.Ki.value);
-            fprintf(1,'\t\t%25s: %d\n','Divisor',self.divisor.value);
-            
+            self.f0.print('Common frequency',strwidth,'%.2f','MHz');
+            self.df.print('Frequency difference',strwidth,'%.3f','MHz');
+            self.demod.print('Demodulation frequency',strwidth,'%.3f','MHz');
+            fprintf(1,'\t ----------------------------------\n');
+            fprintf(1,'\t Phase calculation parameters\n');
+            self.cicRate.print('CIC Rate',strwidth,'%d');
+            fprintf(1,'\t ----------------------------------\n');
+            fprintf(1,'\t Phase control parameters\n');
+            self.phasec.print('Control phase',strwidth,'%.3f','rad');
+            self.enableFB.print('Enable feedback',strwidth,'%d');
+            self.polarity.print('Control polarity',strwidth,'%d');
+            self.Kp.print('Proportional gain',strwidth,'%d');
+            self.Ki.print('Integral gain',strwidth,'%d');
+            self.divisor.print('Overall divisor',strwidth,'%d');            
         end
         
         
