@@ -74,6 +74,7 @@ classdef ConnectionClient < handle
                 %
                 self.client = tcpip(self.host,self.port,'byteOrder','littleEndian');
                 self.client.InputBufferSize = 2^20;
+                self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             elseif strcmpi(r.Status,'closed')
                 %
@@ -82,6 +83,7 @@ classdef ConnectionClient < handle
                 %
                 self.client = r;
                 self.client.InputBufferSize = 2^20;
+                self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             else
                 %

@@ -7,7 +7,8 @@
       "name": "system",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
-      "tool_version": "2020.2"
+      "tool_version": "2020.2",
+      "validated": "true"
     },
     "design_tree": {
       "Utility_Buffers": {
@@ -50,11 +51,67 @@
       },
       "DDR": {
         "mode": "Master",
-        "vlnv": "xilinx.com:interface:ddrx_rtl:1.0"
+        "vlnv": "xilinx.com:interface:ddrx_rtl:1.0",
+        "parameters": {
+          "AXI_ARBITRATION_SCHEME": {
+            "value": "TDM",
+            "value_src": "default"
+          },
+          "BURST_LENGTH": {
+            "value": "8",
+            "value_src": "default"
+          },
+          "CAN_DEBUG": {
+            "value": "false",
+            "value_src": "default"
+          },
+          "CAS_LATENCY": {
+            "value": "11",
+            "value_src": "default"
+          },
+          "CAS_WRITE_LATENCY": {
+            "value": "11",
+            "value_src": "default"
+          },
+          "CS_ENABLED": {
+            "value": "true",
+            "value_src": "default"
+          },
+          "DATA_MASK_ENABLED": {
+            "value": "true",
+            "value_src": "default"
+          },
+          "DATA_WIDTH": {
+            "value": "8",
+            "value_src": "default"
+          },
+          "MEMORY_TYPE": {
+            "value": "COMPONENTS",
+            "value_src": "default"
+          },
+          "MEM_ADDR_MAP": {
+            "value": "ROW_COLUMN_BANK",
+            "value_src": "default"
+          },
+          "SLOT": {
+            "value": "Single",
+            "value_src": "default"
+          },
+          "TIMEPERIOD_PS": {
+            "value": "1250",
+            "value_src": "default"
+          }
+        }
       },
       "FIXED_IO": {
         "mode": "Master",
-        "vlnv": "xilinx.com:display_processing_system7:fixedio_rtl:1.0"
+        "vlnv": "xilinx.com:display_processing_system7:fixedio_rtl:1.0",
+        "parameters": {
+          "CAN_DEBUG": {
+            "value": "false",
+            "value_src": "default"
+          }
+        }
       }
     },
     "ports": {
@@ -91,12 +148,32 @@
       "dac_clk_o": {
         "direction": "O",
         "left": "0",
-        "right": "0"
+        "right": "0",
+        "parameters": {
+          "CLK_DOMAIN": {
+            "value": "system_AXIS_Red_Pitaya_DAC_0_0_dac_clk",
+            "value_src": "default_prop"
+          },
+          "FREQ_HZ": {
+            "value": "100000000",
+            "value_src": "default_prop"
+          },
+          "PHASE": {
+            "value": "0.000",
+            "value_src": "default_prop"
+          }
+        }
       },
       "dac_rst_o": {
         "direction": "O",
         "left": "0",
-        "right": "0"
+        "right": "0",
+        "parameters": {
+          "POLARITY": {
+            "value": "ACTIVE_LOW",
+            "value_src": "default_prop"
+          }
+        }
       },
       "dac_sel_o": {
         "direction": "O",
@@ -116,12 +193,40 @@
       "daisy_p_o": {
         "direction": "O",
         "left": "1",
-        "right": "0"
+        "right": "0",
+        "parameters": {
+          "CLK_DOMAIN": {
+            "value": "system_util_ds_buf_1_0_IBUF_OUT",
+            "value_src": "ip_prop"
+          },
+          "FREQ_HZ": {
+            "value": "100000000",
+            "value_src": "ip_prop"
+          },
+          "PHASE": {
+            "value": "0.000",
+            "value_src": "ip_prop"
+          }
+        }
       },
       "daisy_n_o": {
         "direction": "O",
         "left": "1",
-        "right": "0"
+        "right": "0",
+        "parameters": {
+          "CLK_DOMAIN": {
+            "value": "system_util_ds_buf_1_0_IBUF_OUT",
+            "value_src": "ip_prop"
+          },
+          "FREQ_HZ": {
+            "value": "100000000",
+            "value_src": "ip_prop"
+          },
+          "PHASE": {
+            "value": "0.000",
+            "value_src": "ip_prop"
+          }
+        }
       },
       "daisy_p_i": {
         "direction": "I",
@@ -2432,28 +2537,28 @@
           }
         },
         "interface_nets": {
-          "Conn1": {
-            "interface_ports": [
-              "FIXED_IO",
-              "processing_system7_0/FIXED_IO"
-            ]
-          },
           "axi_protocol_convert_0_M_AXI": {
             "interface_ports": [
               "axi_protocol_convert_0/M_AXI",
               "AXI_Parse_0/s_axi"
             ]
           },
-          "Conn2": {
+          "Conn1": {
             "interface_ports": [
-              "DDR",
-              "processing_system7_0/DDR"
+              "FIXED_IO",
+              "processing_system7_0/FIXED_IO"
             ]
           },
           "processing_system7_0_M_AXI_GP0": {
             "interface_ports": [
               "processing_system7_0/M_AXI_GP0",
               "axi_protocol_convert_0/S_AXI"
+            ]
+          },
+          "Conn2": {
+            "interface_ports": [
+              "DDR",
+              "processing_system7_0/DDR"
             ]
           }
         },
@@ -2955,10 +3060,38 @@
         },
         "ports": {
           "sysclk": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "125000000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.000",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "system_processing_system7_0_0_FCLK_CLK0",
+                "value_src": "default_prop"
+              }
+            }
           },
           "adcclk": {
-            "direction": "I"
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "125000000",
+                "value_src": "user_prop"
+              },
+              "PHASE": {
+                "value": "0.000",
+                "value_src": "default_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "system_AXIS_Red_Pitaya_ADC_0_0_adc_clk",
+                "value_src": "default_prop"
+              }
+            }
           },
           "aresetn": {
             "type": "rst",
@@ -3004,16 +3137,16 @@
       }
     },
     "interface_nets": {
-      "PS7_FIXED_IO": {
-        "interface_ports": [
-          "FIXED_IO",
-          "PS7/FIXED_IO"
-        ]
-      },
       "PS7_DDR": {
         "interface_ports": [
           "DDR",
           "PS7/DDR"
+        ]
+      },
+      "PS7_FIXED_IO": {
+        "interface_ports": [
+          "FIXED_IO",
+          "PS7/FIXED_IO"
         ]
       },
       "topmod_0_m_axis": {

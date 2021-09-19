@@ -18,7 +18,6 @@ entity PhaseControl is
         phase_c     :   in  t_phase;
 
         dds_phase_o :   out t_dds_phase;
-        act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
         phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
     );
@@ -48,8 +47,7 @@ component PIController is
         -- Outputs
         --
         valid_o     :   out std_logic;
-        data_o      :   out t_dds_phase;
-        act_o       :   out unsigned(CORDIC_WIDTH-1 downto 0)
+        data_o      :   out t_phase
     );
 end component;
 
@@ -60,16 +58,18 @@ signal divPower     :   unsigned(3 downto 0);
 signal phaseNew, phaseOld   :   t_phase;
 signal phaseDiff            :   t_phase;
 signal phaseSum             :   t_phase;
-constant PHASE_POS_PI       :   t_phase     :=  to_signed(65535,phaseSum'length);
+--constant PHASE_POS_PI       :   t_phase     :=  to_signed(65535,phaseSum'length);
+constant PHASE_POS_PI       :   t_phase     :=  shift_left(to_signed(1,phaseSum'length),CORDIC_WIDTH - 3);
 
 signal validWrap            :   std_logic;
-signal validPI             :   std_logic;
+signal validPI              :   std_logic;
 
 signal pi_o     :   t_phase;
 
 type t_status_local is (idle,wrapping,summing,output);
 signal state    :   t_status_local  :=  idle;
 
+signal phase_o      :   t_phase;
 signal dds_phase    :   t_dds_phase;
 
 begin
@@ -84,8 +84,7 @@ port map(
     gains       =>  gains,
     params      =>  reg0,
     valid_o     =>  validPI,
-    data_o      =>  dds_phase,
-    act_o       =>  act_phase_o
+    data_o      =>  phase_o
 );
 
 --OutputClocking: process(clk,aresetn) is
@@ -105,7 +104,7 @@ port map(
 --        phaseSum_o <= phaseSum;
 --    end if;
 --end process;
-dds_phase_o <= dds_phase when enable = '1' else resizePhase(phase_c);
+dds_phase_o <= convertPhase(phase_o) when enable = '1' else convertPhase(phase_c);
 valid_o <= validPI when enable = '1' else validWrap;
 phaseSum_o <= phaseSum;
 --
@@ -122,6 +121,7 @@ begin
         phaseOld <= (others => '0');
         phaseSum <= (others => '0');
         state <= idle;
+        validWrap <= '0';
     elsif rising_edge(clk) then
         PhaseCase: case(state) is
             when idle =>

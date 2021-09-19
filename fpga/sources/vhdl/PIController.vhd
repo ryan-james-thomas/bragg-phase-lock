@@ -27,8 +27,7 @@ entity PIController is
         -- Outputs
         --
         valid_o     :   out std_logic;
-        data_o      :   out t_dds_phase;
-        act_o       :   out unsigned(CORDIC_WIDTH-1 downto 0)
+        data_o      :   out t_phase
     );
 end PIController;
 
@@ -42,72 +41,66 @@ COMPONENT PID_Multipliers
     P : OUT STD_LOGIC_VECTOR(35 DOWNTO 0)
   );
 END COMPONENT;
-
 --
 -- Constants
 --
-constant MULT_LATENCY   :   unsigned(3 downto 0)    :=  X"5";
-constant IN_WIDTH       :   natural :=  meas_i'length;
+constant MULT_LATENCY   :   natural :=  3;
 constant EXP_WIDTH      :   natural :=  28;
 constant GAIN_WIDTH     :   natural :=  8;
 constant MULT_WIDTH     :   natural :=  EXP_WIDTH + GAIN_WIDTH;
-
 --
 -- Type definitions
 --
-type t_state_local      is (idle,multiplying,dividing,summing,outputting);
-subtype t_input_local   is signed(EXP_WIDTH-1 downto 0);
-subtype t_gain_local    is std_logic_vector(GAIN_WIDTH-1 downto 0);
-subtype t_mult_local    is signed(MULT_WIDTH-1 downto 0);
-subtype t_phase_local   is signed(PHASE_WIDTH-1 downto 0);
-
-signal state                :   t_state_local;
-signal multCount            :   unsigned(3 downto 0);
-
+type t_state_local          is (idle,multiplying,dividing,summing,outputting);
+subtype t_input_local       is signed(EXP_WIDTH-1 downto 0);
+subtype t_gain_local        is std_logic_vector(GAIN_WIDTH-1 downto 0);
+subtype t_mult_local        is signed(MULT_WIDTH-1 downto 0);
+subtype t_phase_local       is signed(PHASE_WIDTH-1 downto 0);
+type t_input_local_array    is array(natural range <>) of t_input_local;
+--
+-- Parameters
+--
 signal polarity, enable     :   std_logic;
-signal measurement, control :   t_input_local;
-signal err, err0, err1      :   t_input_local;
-signal prop_i, int_i        :   t_input_local;
-signal gainP, gainI         :   t_gain_local;
+signal Kp, Ki, Kd           :   t_gain_local;
 signal divisor              :   natural range 0 to 255;
+--
+-- Signals
+--
+signal err                      :   t_input_local_array(2 downto 0);
+signal measurement, control     :   t_input_local;
+signal prop_i, int_i, deriv_i   :   t_input_local;
+signal prop_o, int_o, deriv_o   :   std_logic_vector(MULT_WIDTH - 1 downto 0);
+signal pidSum, pidAccumulate    :   t_mult_local;
 
-signal prop_o, int_o        :   std_logic_vector(MULT_WIDTH - 1 downto 0);
-signal pidSum, pidDivide    :   t_mult_local;
-
-signal actSigned            :   t_mult_local;
-
-signal actScale             :   signed(CORDIC_WIDTH-1 downto 0);
-signal act2pi               :   unsigned(CORDIC_WIDTH-1 downto 0);
-constant PHASE_2PI          :   unsigned(CORDIC_WIDTH-1 downto 0)   :=  shift_left(to_unsigned(1,CORDIC_WIDTH),CORDIC_WIDTH-2);
-
-signal dds_phase_corr, dds_phase       :   t_dds_phase;
+signal valid_p                  :   std_logic_vector(7 downto 0);
 
 begin
-
 --
 -- Parse inputs
 --
 polarity <= params(0);
 enable <= params(1);
 
-gainP <= gains(7 downto 0);
-gainI <= gains(15 downto 8);
---gainD <= gains(23 downto 16);
+Kp <= gains(7 downto 0);
+Ki <= gains(15 downto 8);
+Kd <= gains(23 downto 16);
 divisor <= to_integer(unsigned(gains(31 downto 24)));
-
 --
 -- Resize inputs
 --
 measurement <= resize(meas_i,measurement'length);
 control <= resize(control_i,control'length);
-err <= (control - measurement) when polarity = '0' else (measurement - control);
-
 --
--- Mutiply terms with gains
+-- Create terms for multiplication and multiply
+--
+prop_i <= err(0) - err(1);
+int_i <= shift_right(err(0) + err(1),1);
+deriv_i <= err(0) - shift_left(err(1),1) + err(2);
+
 PropMult: PID_Multipliers
 port map(
     clk     =>  clk,
-    A       =>  std_logic_vector(gainP),
+    A       =>  Kp,
     B       =>  std_logic_vector(prop_i),
     P       =>  prop_o
 );
@@ -115,99 +108,85 @@ port map(
 IntMult: PID_Multipliers
 port map(
     clk     =>  clk,
-    A       =>  std_logic_vector(gainI),
+    A       =>  Ki,
     B       =>  std_logic_vector(int_i),
     P       =>  int_o
+);
+
+DerivMult: PID_Multipliers
+port map(
+    clk     =>  clk,
+    A       =>  Kd,
+    B       =>  std_logic_vector(deriv_i),
+    P       =>  deriv_o
 );
 
 --
 -- Sum outputs of multipliers and divide to get correct output
 --
-pidSum <= signed(prop_o) + signed(int_o);
-pidDivide <= shift_right(pidSum,divisor);
+pidSum <= signed(prop_o) + signed(int_o) + signed(deriv_o);
 --
--- Resize and wrap output values to 2*pi 
+-- Main process
 --
-actScale <= resize(pidDivide,CORDIC_WIDTH);
-act2pi <= unsigned(actScale) when actScale > 0 else PHASE_2PI - unsigned(abs(actScale));
-dds_phase_corr <=  shift_left(resize(act2pi,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3);
---
--- Generate output
---
-data_o <= dds_phase;
-act_o <= act2pi;
-
 PID: process(clk,aresetn) is
 begin
     if aresetn = '0' then
-        state <= idle;
-        multCount <= X"0";
-        err0 <= (others => '0');
-        err1 <= (others => '0');
-        prop_i <= (others => '0');
-        int_i <= (others => '0');
-        dds_phase <= (others => '0');
+        err <= (others => (others => '0'));
+--        prop_i <= (others => '0');
+--        int_i <= (others => '0');
+--        deriv_i <= (others => '0');
         valid_o <= '0';
+        valid_p <= (others => '0');
+        pidAccumulate <= (others => '0');
+        data_o <= (others => '0');
     elsif rising_edge(clk) then
-        PID_FSM: case(state) is
+        if enable = '1' then
             --
-            -- Wait for input valid signal
+            -- First pipeline stage
             --
-            when idle =>
-                multCount <= X"0";
-                valid_o <= '0';
-                if enable = '1' and valid_i = '1' then
-                    --
-                    -- Calculate the various PI terms
-                    -- 
-                    prop_i <= err - err1;
-                    int_i <= shift_right(err + err1,1);
-                    
-                    --
-                    -- Update error signals
-                    --
-                    err1 <= err;
-                    --
-                    -- Change state
-                    --
-                    state <= multiplying;
-                elsif enable = '0' then
-                    --
-                    -- Reset values as needed
-                    --
-                    prop_i <= (others => '0');
-                    int_i <= (others => '0');
-                    err1 <= (others => '0');
-                    dds_phase <= (others => '0');
-                end if;
-                
-            --
-            -- Wait for multiplication to finish
-            --
-            when multiplying =>
-                if multCount < MULT_LATENCY then
-                    multCount <= multCount + X"1";
+            valid_p(0) <= valid_i;
+            if valid_i = '1' then
+                --
+                -- Get new data
+                --
+                if polarity = '0' then
+                    err(0) <= control - measurement;
                 else
-                    --
-                    -- Add actuator correction pidSum to the old value of actuator pidDivide
-                    -- Note that this addition takes place before the right-shift by divisor bits
-                    --
-                    multCount <= X"0";
-                    state <= summing;
+                    err(0) <= measurement - control;
                 end if;
-                
+                --
+                -- Store previous data
+                --
+                err(1) <= err(0);
+                err(2) <= err(1);
+            end if;
             --
-            -- Sum correction and output
+            -- Step through pipeline stages to account for multiplication latency
             --
-            when summing =>
-                state <= idle;
-                dds_phase <= dds_phase + dds_phase_corr;
-                valid_o <= '1';
-
-               
-            when others => null;
-        end case;
-        
+            for I in 0 to MULT_LATENCY - 1 loop
+                valid_p(I + 1) <= valid_p(I);
+            end loop;
+            --
+            -- Sum new values
+            --
+            if valid_p(MULT_LATENCY) = '1' then
+                pidAccumulate <= pidAccumulate + pidSum;
+            end if;
+            valid_p(1 + MULT_LATENCY) <= valid_p(MULT_LATENCY);
+            --
+            -- Produce output
+            --
+            if valid_p(1 + MULT_LATENCY) = '1' then
+                data_o <= resize(shift_right(pidAccumulate,divisor),data_o'length);
+            end if;
+            valid_o <= valid_p(1 + MULT_LATENCY);
+        else
+            err <= (others => (others => '0'));
+            valid_p <= (others => '0');
+            pidAccumulate <= (others => '0');
+            data_o <= (others => '0');
+            valid_o <= '0';
+        end if;
     end if;
 end process;
 

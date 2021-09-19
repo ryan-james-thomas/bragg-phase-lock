@@ -26,10 +26,10 @@ COMPONENT FIFO_DPG
   PORT (
     clk : IN STD_LOGIC;
     rst : IN STD_LOGIC;
-    din : IN STD_LOGIC_VECTOR(77 DOWNTO 0);
+    din : IN STD_LOGIC_VECTOR(89 DOWNTO 0);
     wr_en : IN STD_LOGIC;
     rd_en : IN STD_LOGIC;
-    dout : OUT STD_LOGIC_VECTOR(77 DOWNTO 0);
+    dout : OUT STD_LOGIC_VECTOR(89 DOWNTO 0);
     full : OUT STD_LOGIC;
     empty : OUT STD_LOGIC
   );
@@ -37,21 +37,22 @@ END COMPONENT;
 
 constant FIFO_POW_WIDTH :   natural :=  CORDIC_WIDTH;
 constant FIFO_FREQ_WIDTH:   natural :=  PHASE_WIDTH;
+constant FIFO_AMP_WIDTH :   natural :=  AMP_MULT_WIDTH;
 constant FIFO_TIME_WIDTH:   natural :=  27;
 
 type t_state_local is (wait_for_trigger,waiting);
 signal state    :   t_state_local  :=  wait_for_trigger;
 
-subtype t_fifo_local is std_logic_vector(77 downto 0);
-type t_fifo_state_local is (pow,freq,duration);
-signal fifo_i   :   t_fifo_local;
-signal fifoCount:   unsigned(1 downto 0);
-signal fifoState:   t_fifo_state_local;
-signal valid    :   std_logic;
+subtype t_fifo_local is std_logic_vector(89 downto 0);
+type t_fifo_state_local is (pow,freq,amp,duration);
+signal fifo_i       :   t_fifo_local;
+signal fifoCount    :   unsigned(1 downto 0);
+signal fifoState    :   t_fifo_state_local;
+signal valid, start :   std_logic;
 
-signal empty, full   :   std_logic;
+signal empty, full  :   std_logic;
 signal wrTrig, rdTrig       :   std_logic;
-signal fifo_o   :   t_fifo_local;
+signal fifo_o       :   t_fifo_local;
 
 signal delay, delayCount    :   unsigned(FIFO_TIME_WIDTH downto 0);
 signal enabled  :   std_logic;
@@ -86,10 +87,14 @@ begin
                 wrTrig <= '0';
             elsif fifoState = freq then
                 fifo_i(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH) <= data_i(FIFO_FREQ_WIDTH - 1 downto 0);
-                fifoState <= duration;
+                fifoState <= amp;
                 wrTrig <= '0';
+            elsif fifoState = amp then
+                fifo_i(FIFO_AMP_WIDTH + FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH + FIFO_FREQ_WIDTH) <= data_i(FIFO_AMP_WIDTH - 1 downto 0);
+                fifoState <= duration;
+                wrTrig <= '0';            
             elsif fifoState = duration then
-                fifo_i(fifo_i'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH) <= data_i(FIFO_TIME_WIDTH - 1 downto 0);
+                fifo_i(fifo_i'length - 1 downto FIFO_AMP_WIDTH + FIFO_FREQ_WIDTH + FIFO_POW_WIDTH) <= data_i(FIFO_TIME_WIDTH - 1 downto 0);
                 fifoState <= pow;
                 wrTrig <= '1';
             end if;
@@ -115,6 +120,7 @@ port map(
 --
 -- Main delay generator
 --
+rising_sync(clk,aresetn,start_i,start);
 TimingProc: process(clk,aresetn) is
 begin
     if aresetn = '0' then
@@ -139,9 +145,10 @@ begin
                 when wait_for_trigger =>
                     data_o.pow <= resize(signed(fifo_o(FIFO_POW_WIDTH - 1 downto 0)),data_o.pow'length);
                     data_o.df <= unsigned(fifo_o(FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_POW_WIDTH));
-                    delay <= resize(unsigned(fifo_o(fifo_o'length - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH)),delay'length) - 3;
+                    data_o.amp <= unsigned(fifo_o(FIFO_AMP_WIDTH + FIFO_FREQ_WIDTH + FIFO_POW_WIDTH - 1 downto FIFO_FREQ_WIDTH + FIFO_POW_WIDTH));
+                    delay <= resize(unsigned(fifo_o(fifo_o'length - 1 downto FIFO_AMP_WIDTH + FIFO_FREQ_WIDTH + FIFO_POW_WIDTH)),delay'length) - 3;
                     
-                    if start_i = '1' or (empty = '0' and enabled = '1') then
+                    if start = '1' or (empty = '0' and enabled = '1') then
                         state <= waiting;
                         rdTrig <= '1';
                         data_o.valid <= '1';

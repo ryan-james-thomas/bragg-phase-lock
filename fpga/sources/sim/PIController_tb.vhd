@@ -32,8 +32,7 @@ component PIController is
         -- Outputs
         --
         valid_o     :   out std_logic;
-        data_o      :   out t_dds_phase;
-        act_o       :   out unsigned(CORDIC_WIDTH-1 downto 0)
+        data_o      :   out t_phase
     );
 end component;
 
@@ -51,7 +50,7 @@ signal valid_i              :   std_logic;
 signal gains, params        :   t_param_reg;
 
 signal valid_o  :   std_logic;
-signal data_o   :   t_dds_phase;
+signal data_o   :   t_phase;
 signal act_o    :   unsigned(CORDIC_WIDTH - 1 downto 0);
 
 --
@@ -92,8 +91,7 @@ port map(
     gains       =>  gains,
     params      =>  params,
     valid_o     =>  valid_o,
-    data_o      =>  data_o,
-    act_o       =>  act_o
+    data_o      =>  data_o
 );
 
 MeasProc: process(sysclk,aresetn) is
@@ -109,7 +107,7 @@ begin
         else
             count <= (others => '0');
             valid_i <= '1';
-            meas_i <= convertPhase(data_o);
+            meas_i <= data_o;
         end if;
     end if;
 end process;
@@ -118,7 +116,7 @@ main: process is
 begin
     aresetn <= '0';
     control_i <= (others => '0');
-    gains <= X"05000501";
+    gains <= X"05001405";
     params <= (0 => '0', 1 => '0', others => '0');
     measDelay <= to_unsigned(20,measDelay'length);
     wait for 100 ns;
@@ -127,6 +125,9 @@ begin
     wait for 100 ns;
     params <= (0 => '0', 1 => '1', others => '0');
     control_i <= to_signed(1000,control_i'length);
+    wait for 5 us;
+    wait until rising_edge(sysclk);
+    control_i <= to_signed(-1000,control_i'length);
     wait;
 end process;
 

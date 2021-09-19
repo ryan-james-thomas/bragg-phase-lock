@@ -12,12 +12,14 @@ classdef PhaseLock < handle
         shift       %Shift right by this
         useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
         useManual   %True to use manual values, false to use timing controller values
+        useTCDemod  %True to use the TC df output as the OUT1 frequency and demod freq, for testing
         %
         % Frequency parameters
         %
         f0          %Center frequency
         df          %Difference frequency
         demod       %Demodulation frequency
+        amp         %Amplitude
         %
         % Phase calculation parameters
         %
@@ -30,6 +32,7 @@ classdef PhaseLock < handle
         polarity    %Feedback polarity
         Kp          %Proportional gain
         Ki          %Integral gain
+        Kd          %Derivative gain
         divisor     %Overall divisor
         
     end
@@ -62,6 +65,7 @@ classdef PhaseLock < handle
         HOST_ADDRESS = '192.168.1.109'; %Default socket server address
         DDS_WIDTH = 27;                 %Bit width of the DDS phase inputs
         CORDIC_WIDTH = 24;              %Bit width of the measured phase
+        AMP_WIDTH = 12;                 %Bit width of amplitude scaling
     end
     
     methods
@@ -107,6 +111,8 @@ classdef PhaseLock < handle
                 .setLimits('lower',0,'upper',1);
             self.useManual = DeviceParameter([5,5],self.topReg)...
                 .setLimits('lower',0,'upper',1);
+            self.useTCDemod = DeviceParameter([6,6],self.topReg)...
+                .setLimits('lower',0,'upper',1);
             %
             % Frequency generation
             %
@@ -119,6 +125,9 @@ classdef PhaseLock < handle
             self.demod = DeviceParameter([0,26],self.freqDemodReg)...
                 .setLimits('lower',0,'upper',2^27)...
                 .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
+            self.amp = DeviceParameter([20,31],self.topReg)...
+                .setLimits('lower',0,'upper',1)...
+                .setFunctions('to',@(x) x*(2^self.AMP_WIDTH - 1),'from',@(x) x/(2^self.AMP_WIDTH - 1));
             %
             % Phase calculation
             %
@@ -149,6 +158,9 @@ classdef PhaseLock < handle
             self.Ki = DeviceParameter([8,15],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
+            self.Kd = DeviceParameter([16,23],self.phaseGainReg)...
+                .setLimits('lower',0,'upper',255)...
+                .setFunctions('to',@(x) x,'from',@(x) x);
             self.divisor = DeviceParameter([24,31],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
@@ -162,12 +174,14 @@ classdef PhaseLock < handle
             self.shift.set(3);
             self.useSetDemod.set(0);
             self.useManual.set(1);
+            self.useTCDemod.set(0);
             %
             % Frequency parameters
             %
             self.f0.set(35);
             self.df.set(0.125);
             self.demod.set(1);
+            self.amp.set(1);
             %
             % Phase calculation
             %
@@ -180,6 +194,7 @@ classdef PhaseLock < handle
             self.polarity.set(0);
             self.Kp.set(50);
             self.Ki.set(140);
+            self.Kd.set(0);
             self.divisor.set(11);
         end
         
@@ -217,9 +232,11 @@ classdef PhaseLock < handle
             self.shift.get;
             self.useSetDemod.get;
             self.useManual.get;
+            self.useTCDemod.get;
             self.f0.get;
             self.df.get;
             self.demod.get;
+            self.amp.get;
             self.cicRate.get;
             self.phasec.get;
             
@@ -227,6 +244,7 @@ classdef PhaseLock < handle
             self.polarity.get;
             self.Kp.get;
             self.Ki.get;
+            self.Kd.get;
             self.divisor.get;
         end
         
@@ -243,16 +261,20 @@ classdef PhaseLock < handle
             self.auxReg.addr = '01000008';
             self.auxReg.read;
             data.tc_df = double(self.auxReg.value)/2^self.DDS_WIDTH*125;
-            %tc_pow
+            %tc_amp
             self.auxReg.addr = '0100000C';
+            self.auxReg.read;
+            data.tc_amp = double(self.auxReg.value)/(2^self.AMP_WIDTH - 1);
+            %tc_pow
+            self.auxReg.addr = '01000010';
             self.auxReg.read;
             data.tc_pow = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
             %phase_c
-            self.auxReg.addr = '01000010';
+            self.auxReg.addr = '01000014';
             self.auxReg.read;
             data.phasec = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
             %Debug
-            self.auxReg.addr = '01000014';
+            self.auxReg.addr = '01000018';
             self.auxReg.read;
             data.debug = dec2bin(self.auxReg.value,8);
         end
@@ -272,37 +294,53 @@ classdef PhaseLock < handle
             self.trigReg.set(0,[0,0]);
         end
         
-        function self = getPhaseData(self,numSamples,saveStreams,startFlag)
+        function r = dt(self)
+            r = 2^self.cicRate.value/self.CLK;
+        end
+        
+        function [Kp,Ki,Kd] = calcRealGains(self)
+            Kp = self.Kp.value/2^self.divisor.value;
+            Ki = self.Ki.value/(2^self.divisor.value*self.dt);
+            Kd = self.Kd.value*self.dt/2^self.divisor.value;
+        end
+        
+        function self = getPhaseData(self,numSamples,saveFlags,startFlag)
             if nargin < 3
-                saveStreams = 1;
+                saveFlags = '-p';
             end
-            if nargin < 4
-                startFlag = 0;
+            if nargin < 4 || startFlag == 0
+                startFlag = '';
+            else
+                startFlag = '-b';
             end
-            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveStreams,'saveType',0,'startFlag',startFlag);
+            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveFlags,'saveType',0,'startFlag',startFlag);
             raw = typecast(self.conn.recvMessage,'uint8');
-            d = self.convertData(raw,'phase',saveStreams);
+            d = self.convertData(raw,'phase',saveFlags);
             self.data = d;
             self.t = 1/self.CLK*2^self.cicRate.value*(0:(numSamples-1));
         end
         
-        function uploadTiming(self,t,ph,freq)
+        function uploadTiming(self,t,ph,amp,freq)
             t = t(:);
             ph = ph(:);
+            amp = amp(:);
             freq = freq(:);
             
             dt = uint32([round(diff(t)*self.CLK);1000]);
             ph = int32(ph/pi*2^(self.CORDIC_WIDTH-3));
+            amp = uint32(amp*(2^self.AMP_WIDTH - 1));
             freq = uint32(freq*1e6/self.CLK*2^self.DDS_WIDTH);
             
             addr = self.timingReg.addr;
-            d = zeros(3*numel(dt)+1,1,'uint32');
+            d = zeros(4*numel(dt)+1,1,'uint32');
             d(1) = uint32(addr);
             mm = 2;
             for nn = 1:numel(dt)
                 d(mm) = typecast(ph(nn),'uint32');
                 mm = mm + 1;
                 d(mm) = typecast(freq(nn),'uint32');
+                mm = mm + 1;
+                d(mm) = typecast(amp(nn),'uint32');
                 mm = mm + 1;
                 d(mm) = typecast(dt(nn),'uint32');
                 mm = mm + 1;
@@ -328,11 +366,13 @@ classdef PhaseLock < handle
             self.shift.print('Freq. difference shift',strwidth,'%d');
             self.useSetDemod.print('Use fixed demod freq.',strwidth,'%d');
             self.useManual.print('Use manual',strwidth,'%d');
+            self.useTCDemod.print('Use TC demod.',strwidth,'%d');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Frequency Parameters\n');
             self.f0.print('Common frequency',strwidth,'%.2f','MHz');
             self.df.print('Frequency difference',strwidth,'%.3f','MHz');
             self.demod.print('Demodulation frequency',strwidth,'%.3f','MHz');
+            self.amp.print('Amplitude',strwidth,'%.3f','V');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Phase calculation parameters\n');
             self.cicRate.print('CIC Rate',strwidth,'%d');
@@ -343,6 +383,7 @@ classdef PhaseLock < handle
             self.polarity.print('Control polarity',strwidth,'%d');
             self.Kp.print('Proportional gain',strwidth,'%d');
             self.Ki.print('Integral gain',strwidth,'%d');
+            self.Kd.print('Derivative gain',strwidth,'%d');
             self.divisor.print('Overall divisor',strwidth,'%d');            
         end
         
@@ -350,7 +391,7 @@ classdef PhaseLock < handle
     end
     
     methods(Static)
-        function d = loadData(filename,dt,streams)
+        function d = loadData(filename,dt,flags)
             if nargin == 0 || isempty(filename)
                 filename = 'SavedData.bin';
             end
@@ -363,7 +404,7 @@ classdef PhaseLock < handle
             x = fread(fid,fsize,'uint8');
             fclose(fid);
             
-            d = PhaseLock.convertData(x,'phase',streams);
+            d = PhaseLock.convertData(x,'phase',flags);
             if ~isempty(d.ph)
                 N = numel(d.ph);
             elseif ~isempty(d.act)
@@ -374,9 +415,22 @@ classdef PhaseLock < handle
             d.t = dt*(0:(N-1));
         end
         
-        function varargout = convertData(raw,method,streams)
-            if nargin < 3 || isempty(streams)
+        function varargout = convertData(raw,method,flags)
+            if nargin < 3 || isempty(flags)
                 streams = 1;
+            else
+                streams = 0;
+                if contains(flags,'p')
+                    streams = streams + 1;
+                end
+                
+                if contains(flags,'s')
+                    streams = streams + 2;
+                end
+                
+                if contains(flags,'d')
+                    streams = streams + 4;
+                end
             end
             raw = raw(:);
             Nraw = numel(raw);

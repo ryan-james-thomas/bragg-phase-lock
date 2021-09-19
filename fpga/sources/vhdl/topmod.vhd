@@ -43,9 +43,11 @@ component DualChannelDDS is
         ftw1            :   in  t_dds_phase;
         ftw2            :   in  t_dds_phase;
         
+        amp_i           :   in  t_amp_mult;
+        
         m_axis_tdata    :   out std_logic_vector(31 downto 0);
         m_axis_tvalid   :   out std_logic
-    );    
+    );     
 end component;
 
 component PhaseCalculation is
@@ -77,7 +79,6 @@ component PhaseControl is
         phase_c     :   in  t_phase;
 
         dds_phase_o :   out t_dds_phase;
-        act_phase_o :   out unsigned(CORDIC_WIDTH-1 downto 0);
         phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
     );
@@ -130,9 +131,11 @@ signal dfmodManual  :   t_dds_phase     :=  (others => '0');
 signal dfmod_i      :   t_dds_phase     :=  (others => '0');
 signal pow          :   t_dds_phase     :=  (others => '0');
 signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
+signal amp_i, ampSet:   t_amp_mult;
 signal useSetDemod  :   std_logic;
 signal dfshift      :   unsigned(3 downto 0);
 signal useManual    :   std_logic;
+signal useTCDemod   :   std_logic;
 
 --
 -- Phase calculation signals
@@ -197,6 +200,8 @@ begin
 dfshift <= unsigned(topReg(3 downto 0));    --Integer shift right for demodulation frequency
 useSetDemod <= topReg(4);                   --Use a set demodulation frequency '1' or a shifted one '0'
 useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
+useTCDemod <= topReg(6);                    --Use TC df output as FTW1 and demod frequency inputs
+ampSet <= unsigned(topReg(31 downto 32 - ampSet'length));
 
 regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
 tcStart <= triggers(1);                     --Start the timing controller
@@ -209,8 +214,9 @@ tcStart <= triggers(1);                     --Start the timing controller
 -- ftw2 is connected to OUT2 on the board as the most-significant 16 bits
 --
 df <= dfSet when useManual = '1' else tc_o.df;  --Use dfSet when manual (set in parse process) or timing controller value
-ftw1 <= f0 + df;
-ftw2 <= f0 - df;
+ftw1 <= f0 + df when useManual = '1' or useTCDemod = '0' else tc_o.df;
+ftw2 <= f0 - df when useManual = '1' or useTCDemod = '0' else tc_o.df;
+amp_i <= ampSet when useManual = '1' else tc_o.amp;
 DDS_2Channel: DualChannelDDS
 port map(
     clk             =>  adcclk,
@@ -218,6 +224,7 @@ port map(
     pow1            =>  powControl,
     ftw1            =>  ftw1,
     ftw2            =>  ftw2,
+    amp_i           =>  amp_i,
     m_axis_tvalid   =>  m_axis_tvalid,
     m_axis_tdata    =>  m_axis_tdata
 );
@@ -229,7 +236,9 @@ adc <= signed(adcData_i(adc'length-1 downto 0));
 -- Demodulation frequency is either a shifted version of the one used for freq generation
 -- or it's a fixed one set by the user. The fixed one is allowed only for manual control
 --
-dfmod_i <= shift_left(df,to_integer(dfShift)) when (useSetDemod = '0' or useManual = '0') else dfmod;
+dfmod_i <= shift_left(df,to_integer(dfShift)) when (useSetDemod = '0' or useManual = '0') and useTCDemod = '0' else
+           tc_o.df when useManual = '0' and useTCDemod = '1' else
+           dfmod;
 PhaseCalc: PhaseCalculation
 port map(
     clk         =>  adcclk,
@@ -260,7 +269,6 @@ port map(
     valid_i     =>  phaseValid,
     phase_c     =>  phase_c,
     dds_phase_o =>  powControl,
-    act_phase_o =>  actPhase,
     phaseSum_o  =>  phaseSum,
     valid_o     =>  powControlValid
 );
@@ -271,13 +279,13 @@ port map(
 --
 -- Extends FIFO reset signals
 --
-ResetExtend: process(adcclk,aresetn) is
+ResetExtend: process(sysclk,aresetn) is
 begin
     if aresetn = '0' then
         resetExtended <= '0';
         tcReset <= '0';
         resetCount <= (others => '0');
-    elsif rising_edge(adcclk) then
+    elsif rising_edge(sysclk) then
         if triggers(3) = '1' then
             tcReset <= '1';
             resetExtended <= '1';
@@ -419,9 +427,10 @@ begin
                             when X"000000" => readOnly(bus_m,bus_s,comState,df);
                             when X"000004" => readOnly(bus_m,bus_s,comState,dfmod_i);
                             when X"000008" => readOnly(bus_m,bus_s,comState,tc_o.df);
-                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.pow);
-                            when X"000010" => readOnly(bus_m,bus_s,comState,phase_c);
-                            when X"000014" => readOnly(bus_m,bus_s,comState,debug_o);
+                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp);
+                            when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.pow);
+                            when X"000014" => readOnly(bus_m,bus_s,comState,phase_c);
+                            when X"000018" => readOnly(bus_m,bus_s,comState,debug_o);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";

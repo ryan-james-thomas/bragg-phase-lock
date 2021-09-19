@@ -4,6 +4,10 @@ fpga/sources/system/ip/
 fpga/sources/system/ipshared/
 fpga/sources/system/ui
 
+*.jou
+*.log
+
 *.asv
 data/
 .vscode/
+*~

@@ -18,7 +18,7 @@ def write(data,header):
         elif header["mode"] == "fetch data":
             cmd = ['./fetchData',format(header["numFetch"]),format(header["fetchType"])]
         elif header["mode"] == "acquire phase":
-            cmd = ['./saveData',format(header["numSamples"]),format(header["saveType"]),format(header["saveStreams"]),format(header["startFlag"])]
+            cmd = ['./saveData','-n',format(header["numSamples"]),'-t',format(header["saveType"]),format(header["saveStreams"]),format(header["startFlag"])]
 
         if ("print" in header) and (header["print"]):
             print("Command: ",cmd)

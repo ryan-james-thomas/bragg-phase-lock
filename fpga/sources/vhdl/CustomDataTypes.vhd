@@ -150,20 +150,22 @@ constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (other
 
 
 
-                                                     
-
+constant AMP_MULT_WIDTH :   natural :=  12;                                                     
+subtype t_amp_mult is unsigned(AMP_MULT_WIDTH - 1 downto 0);
 
 type t_timing_control is record
     enable  :   std_logic;
     df      :   t_dds_phase;
     pow     :   t_phase;
+    amp     :   t_amp_mult;
     valid   :   std_logic;
 end record t_timing_control;
 
 constant INIT_TIMING_CONTROL    :   t_timing_control    :=  (enable => '0',
                                                              valid  => '0',
                                                              df     => (others => '0'),
-                                                             pow    => (others => '0'));
+                                                             pow    => (others => '0'),
+                                                             amp    => (others => '0'));
 
 
 function resizePhase ( ARG: signed) return t_dds_phase;
@@ -206,14 +208,14 @@ end resizePhase;
 function convertPhase(arg: t_phase) return t_dds_phase is
     variable RESULT     :   t_dds_phase;
 begin
-    RESULT  :=  unsigned(shift_left(resize(arg,PHASE_WIDTH),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3));
+    RESULT  :=  unsigned(shift_left(resize(arg,PHASE_WIDTH),PHASE_WIDTH - CORDIC_WIDTH + 3));
     return RESULT;
 end convertPhase;
 
 function convertPhase(arg: t_dds_phase) return t_phase is
     variable RESULT     :   t_phase;
 begin
-    RESULT  :=  resize(shift_right(signed(arg),PHASE_WIDTH - 1 - CORDIC_WIDTH + 3),32);
+    RESULT  :=  resize(shift_right(signed(arg),PHASE_WIDTH - CORDIC_WIDTH + 3),32);
     return RESULT;
 end convertPhase;
 

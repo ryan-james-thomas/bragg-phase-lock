@@ -69,6 +69,17 @@ COMPONENT MixerDDS_PhaseOffset
   );
 END COMPONENT;
 
+COMPONENT FreqPhaseStreamDDS
+  PORT (
+    aclk : IN STD_LOGIC;
+    aresetn : IN STD_LOGIC;
+    s_axis_phase_tvalid : IN STD_LOGIC;
+    s_axis_phase_tdata : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+  );
+END COMPONENT;
+
 --
 -- Clocks and reset
 --
@@ -96,7 +107,7 @@ signal bus_s                    :   t_axi_bus_slave;
 signal ddsfreq          :   std_logic_vector(31 downto 0);
 signal ddsphase         :   std_logic_vector(31 downto 0);
 signal ddsphaseValid    :   std_logic;
-signal dds_o            :   std_logic_vector(31 downto 0);
+signal dds_o            :   std_logic_vector(15 downto 0);
 signal ddsValid_o       :   std_logic;
 signal mixPhase_slv     :   std_logic_vector(63 downto 0);
 
@@ -207,8 +218,8 @@ bus_s.resp <= resp_o;
 --
 mixPhase_slv(31 downto 0) <= std_logic_vector(resize(shift_left(unsigned(dfSet),to_integer(unsigned(topReg(3 downto 0)))),32)) when topReg(4) = '0' else
                              std_logic_vector(resize(unsigned(dfmod),32));
-mixPhase_slv(63 downto 32) <= (others => '0');
-DataGet : MixerDDS_PhaseOffset
+mixPhase_slv(63 downto 32) <= ddsphase;
+DataGet : FreqPhaseStreamDDS
 PORT MAP (
     aclk => adcclk,
     aresetn => aresetn,
@@ -221,7 +232,8 @@ PORT MAP (
 -- Generate ADC data
 --
 --adcData_i <= std_logic_vector(shift_left(resize(signed(dds_o(15 downto 0)),adcData_i'length),0) + to_signed(0,adcData_i'length));
-adcData_i <= X"0000" & std_logic_vector(signed(dds_o(15 downto 0))) when enable = '0' else X"0000" & std_logic_vector(m_axis_tdata(15 downto 0));
+adcData_i <= X"0000" & std_logic_vector(signed(dds_o(15 downto 0))) when enable = '0' 
+             else X"0000" & std_logic_vector(m_axis_tdata(15 downto 0));
 --
 -- Assign AXI registers
 --
@@ -265,14 +277,14 @@ begin
     enable <= '0';
     -- Register values
     triggers        <= (0 => '1', others => '0');
-    topReg          <= X"000000" & "0011" & X"3";
-    f0              <= X"024dd2f2";
-    dfSet           <= X"00020c4a";
-    dfmod           <= X"00106250";
+    topReg          <= X"fff000" & "0011" & X"3";
+    f0              <= std_logic_vector(to_unsigned(536871,32));
+    dfSet           <= X"00000000";
+    dfmod           <= std_logic_vector(to_unsigned(536871,32));
     phase_c         <= X"00000000";
-    regPhaseCalc    <= X"0000000a";
+    regPhaseCalc    <= X"00000008";
     regPhaseControl <= X"00000000";
-    regControlGains <= X"10009632";
+    regControlGains <= X"0d196419";
     fifoReg <= (others => '0');
     wait for 200 ns;
     --
@@ -287,12 +299,33 @@ begin
     startAXI <= '1';
     wait until rising_edge(sysclk);
     startAXI <= '0';
+    enable <= '1';
+--    wait for 50 us;
+----    ddsphase <= std_logic_vector(to_unsigned(262144,32));
+--    wait until rising_edge(sysclk);
+--    axi_addr_single <= X"00000014";
+--    axi_data_single <= std_logic_vector(to_signed(65536,32));
+--    start_single_i <= "01";
+--    wait until rising_edge(sysclk);
+--    start_single_i <= "00";
     wait for 50 us;
-    wait until rising_edge(sysclk);
+    --
+    -- Enable PID controller
+    --
     axi_addr_single <= X"0000001C";
-    axi_data_single <= X"00000003";
+    axi_data_single <= X"00000003";   
     start_single_i <= "01";
     enable <= '1';
+    wait until rising_edge(sysclk);
+    start_single_i <= "00";
+    wait for 150 us;
+    wait until rising_edge(sysclk);
+    --
+    -- Change the control phase
+    --
+    axi_addr_single <= X"00000014";
+    axi_data_single <= std_logic_vector(to_unsigned(1048576,32));   
+    start_single_i <= "01";
     wait until rising_edge(sysclk);
     start_single_i <= "00";
     
