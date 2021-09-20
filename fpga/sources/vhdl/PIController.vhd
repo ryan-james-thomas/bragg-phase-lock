@@ -21,8 +21,10 @@ entity PIController is
         --
         -- Parameters
         --
+        enable_i    :   in  std_logic;
+        polarity_i  :   in  std_logic;
+        hold_i      :   in  std_logic;
         gains       :   in  t_param_reg;
-        params      :   in  t_param_reg;
         --
         -- Outputs
         --
@@ -60,7 +62,6 @@ type t_input_local_array    is array(natural range <>) of t_input_local;
 --
 -- Parameters
 --
-signal polarity, enable     :   std_logic;
 signal Kp, Ki, Kd           :   t_gain_local;
 signal divisor              :   natural range 0 to 255;
 --
@@ -76,11 +77,8 @@ signal valid_p                  :   std_logic_vector(7 downto 0);
 
 begin
 --
--- Parse inputs
+-- Parse PID gains
 --
-polarity <= params(0);
-enable <= params(1);
-
 Kp <= gains(7 downto 0);
 Ki <= gains(15 downto 8);
 Kd <= gains(23 downto 16);
@@ -120,7 +118,6 @@ port map(
     B       =>  std_logic_vector(deriv_i),
     P       =>  deriv_o
 );
-
 --
 -- Sum outputs of multipliers and divide to get correct output
 --
@@ -132,15 +129,12 @@ PID: process(clk,aresetn) is
 begin
     if aresetn = '0' then
         err <= (others => (others => '0'));
---        prop_i <= (others => '0');
---        int_i <= (others => '0');
---        deriv_i <= (others => '0');
         valid_o <= '0';
         valid_p <= (others => '0');
         pidAccumulate <= (others => '0');
         data_o <= (others => '0');
     elsif rising_edge(clk) then
-        if enable = '1' then
+        if enable_i = '1' then
             --
             -- First pipeline stage
             --
@@ -149,7 +143,7 @@ begin
                 --
                 -- Get new data
                 --
-                if polarity = '0' then
+                if polarity_i = '0' then
                     err(0) <= control - measurement;
                 else
                     err(0) <= measurement - control;
@@ -169,7 +163,7 @@ begin
             --
             -- Sum new values
             --
-            if valid_p(MULT_LATENCY) = '1' then
+            if valid_p(MULT_LATENCY) = '1' and hold_i = '0' then
                 pidAccumulate <= pidAccumulate + pidSum;
             end if;
             valid_p(1 + MULT_LATENCY) <= valid_p(MULT_LATENCY);

@@ -7,16 +7,31 @@ use work.AXI_Bus_Package.all;
 
 entity PhaseControl is
     port(
+        --
+        -- Clocks and reset
+        --
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
-
+        --
+        -- Register (0 => polarity, 1 => enable)
+        -- Gains (31 downto 24 => divisor, 23 downto 16 => Kd,
+        -- 15 downto 8 => Ki, 7 downto 0 => Kp)
+        --
         reg0        :   in  t_param_reg;
         gains       :   in  t_param_reg;
-
+        --
+        -- Input data
+        --
         phase_i     :   in  t_phase;
         valid_i     :   in  std_logic;
+        --
+        -- Input flags and control phase
+        --
+        tc_i        :   in  t_timing_control;
         phase_c     :   in  t_phase;
-
+        --
+        -- Output signals
+        --
         dds_phase_o :   out t_dds_phase;
         phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
@@ -41,8 +56,10 @@ component PIController is
         --
         -- Parameters
         --
+        enable_i    :   in  std_logic;
+        polarity_i  :   in  std_logic;
+        hold_i      :   in  std_logic;
         gains       :   in  t_param_reg;
-        params      :   in  t_param_reg;
         --
         -- Outputs
         --
@@ -58,7 +75,6 @@ signal divPower     :   unsigned(3 downto 0);
 signal phaseNew, phaseOld   :   t_phase;
 signal phaseDiff            :   t_phase;
 signal phaseSum             :   t_phase;
---constant PHASE_POS_PI       :   t_phase     :=  to_signed(65535,phaseSum'length);
 constant PHASE_POS_PI       :   t_phase     :=  shift_left(to_signed(1,phaseSum'length),CORDIC_WIDTH - 3);
 
 signal validWrap            :   std_logic;
@@ -82,28 +98,13 @@ port map(
     control_i   =>  phase_c,
     valid_i     =>  validWrap,
     gains       =>  gains,
-    params      =>  reg0,
+    enable_i    =>  enable,
+    polarity_i  =>  polarity,
+    hold_i      =>  tc_i.flags(1),
     valid_o     =>  validPI,
     data_o      =>  phase_o
 );
 
---OutputClocking: process(clk,aresetn) is
---begin
---    if aresetn = '0' then
---        dds_phase_o <= (others => '0');
---        valid_o <= '0';
---        phaseSum_o <= (others => '0');
---    elsif rising_edge(clk) then
---        if enable = '1' then
---            dds_phase_o <= dds_phase;
---            valid_o <= validPI;
---        else
---            dds_phase_o <= resizePhase(phase_c);
---            valid_o <= validWrap;
---        end if;
---        phaseSum_o <= phaseSum;
---    end if;
---end process;
 dds_phase_o <= convertPhase(phase_o) when enable = '1' else convertPhase(phase_c);
 valid_o <= validPI when enable = '1' else validWrap;
 phaseSum_o <= phaseSum;
@@ -111,7 +112,7 @@ phaseSum_o <= phaseSum;
 -- Unwrap phase
 --
 polarity <= reg0(0);
-enable <= reg0(1);
+enable <= reg0(1) when tc_i.enable = '0' else tc_i.flags(0);
 
 PhaseWrap: process(clk,aresetn) is
 begin

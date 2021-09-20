@@ -269,12 +269,16 @@ classdef PhaseLock < handle
             self.auxReg.addr = '01000010';
             self.auxReg.read;
             data.tc_pow = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
-            %phase_c
+            %tc_flags
             self.auxReg.addr = '01000014';
+            self.auxReg.read;
+            data.tc_flags = dec2bin(self.auxReg.value,8);
+            %phase_c
+            self.auxReg.addr = '01000018';
             self.auxReg.read;
             data.phasec = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
             %Debug
-            self.auxReg.addr = '01000018';
+            self.auxReg.addr = '0100001C';
             self.auxReg.read;
             data.debug = dec2bin(self.auxReg.value,8);
         end
@@ -320,11 +324,16 @@ classdef PhaseLock < handle
             self.t = 1/self.CLK*2^self.cicRate.value*(0:(numSamples-1));
         end
         
-        function uploadTiming(self,t,ph,amp,freq)
+        function uploadTiming(self,t,ph,amp,freq,flags)
             t = t(:);
             ph = ph(:);
             amp = amp(:);
             freq = freq(:);
+            if nargin < 6
+                flags = zeros(numel(freq),1);
+            else
+                flags = flags(:);
+            end
             
             dt = uint32([round(diff(t)*self.CLK);1000]);
             ph = int32(ph/pi*2^(self.CORDIC_WIDTH-3));
@@ -343,6 +352,7 @@ classdef PhaseLock < handle
                 d(mm) = typecast(amp(nn),'uint32');
                 mm = mm + 1;
                 d(mm) = typecast(dt(nn),'uint32');
+                d(mm) = d(mm) + bitshift(flags(nn),27);
                 mm = mm + 1;
             end
             self.resetTC;

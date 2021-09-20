@@ -2943,6 +2943,12 @@
               "HAS_TLAST": {
                 "value": "0",
                 "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "125000000"
+              },
+              "CLK_DOMAIN": {
+                "value": "adc_clk"
               }
             },
             "port_maps": {

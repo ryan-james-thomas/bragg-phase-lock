@@ -68,16 +68,31 @@ end component;
 
 component PhaseControl is
     port(
+        --
+        -- Clocks and reset
+        --
         clk         :   in  std_logic;
         aresetn     :   in  std_logic;
-
+        --
+        -- Register (0 => polarity, 1 => enable)
+        -- Gains (31 downto 24 => divisor, 23 downto 16 => Kd,
+        -- 15 downto 8 => Ki, 7 downto 0 => Kp)
+        --
         reg0        :   in  t_param_reg;
         gains       :   in  t_param_reg;
-
+        --
+        -- Input data
+        --
         phase_i     :   in  t_phase;
         valid_i     :   in  std_logic;
+        --
+        -- Input flags and control phase
+        --
+        tc_i        :   in  t_timing_control;
         phase_c     :   in  t_phase;
-
+        --
+        -- Output signals
+        --
         dds_phase_o :   out t_dds_phase;
         phaseSum_o  :   out t_phase;
         valid_o     :   out std_logic
@@ -268,6 +283,7 @@ port map(
     phase_i     =>  phase,
     valid_i     =>  phaseValid,
     phase_c     =>  phase_c,
+    tc_i        =>  tc_o,
     dds_phase_o =>  powControl,
     phaseSum_o  =>  phaseSum,
     valid_o     =>  powControlValid
@@ -429,8 +445,9 @@ begin
                             when X"000008" => readOnly(bus_m,bus_s,comState,tc_o.df);
                             when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp);
                             when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.pow);
-                            when X"000014" => readOnly(bus_m,bus_s,comState,phase_c);
-                            when X"000018" => readOnly(bus_m,bus_s,comState,debug_o);
+                            when X"000014" => readOnly(bus_m,bus_s,comState,tc_o.flags);
+                            when X"000018" => readOnly(bus_m,bus_s,comState,phase_c);
+                            when X"00001C" => readOnly(bus_m,bus_s,comState,debug_o);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";
