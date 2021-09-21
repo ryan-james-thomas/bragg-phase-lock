@@ -308,7 +308,7 @@ classdef PhaseLock < handle
             Kd = self.Kd.value*self.dt/2^self.divisor.value;
         end
         
-        function self = getPhaseData(self,numSamples,saveFlags,startFlag)
+        function self = getPhaseData(self,numSamples,saveFlags,startFlag,saveType)
             if nargin < 3
                 saveFlags = '-p';
             end
@@ -317,7 +317,14 @@ classdef PhaseLock < handle
             else
                 startFlag = '-b';
             end
-            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,'saveStreams',saveFlags,'saveType',0,'startFlag',startFlag);
+            
+            if nargin < 5
+                saveType = 2;
+            end
+            
+            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,...
+                'saveStreams',saveFlags,'saveType',0,'startFlag',startFlag,...
+                'saveType',saveType);
             raw = typecast(self.conn.recvMessage,'uint8');
             d = self.convertData(raw,'phase',saveFlags);
             self.data = d;

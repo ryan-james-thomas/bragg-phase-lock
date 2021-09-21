@@ -87,7 +87,7 @@ for nn = 1:numPulses
     %
     % Set frequencies
     %
-    freq(idx) = f0 + chirp*t(idx);
+    freq(idx) = f0 + chirp*tc;
     %
     % Set hold
     %

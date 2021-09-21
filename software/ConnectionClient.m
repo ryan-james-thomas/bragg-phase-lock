@@ -73,7 +73,7 @@ classdef ConnectionClient < handle
                 % If no connections exist, create that connection
                 %
                 self.client = tcpip(self.host,self.port,'byteOrder','littleEndian');
-                self.client.InputBufferSize = 2^20;
+                self.client.InputBufferSize = 2^24;
                 self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             elseif strcmpi(r.Status,'closed')
@@ -82,7 +82,7 @@ classdef ConnectionClient < handle
                 % size correctly and then open it
                 %
                 self.client = r;
-                self.client.InputBufferSize = 2^20;
+                self.client.InputBufferSize = 2^24;
                 self.client.OutputBufferSize = 2^20;
                 fopen(self.client);
             else
@@ -272,6 +272,7 @@ classdef ConnectionClient < handle
             %PROCESSMESSAGE Reads the data payload from the message
             if self.bytesRead < self.header.length && self.client.BytesAvailable > 0
                 bytesToRead = self.client.BytesAvailable;
+%                 fprintf(1,'Bytes to read: %d\n',bytesToRead);
                 tmp = uint8(fread(self.client,bytesToRead,'uint8'));
                 self.recvMessage = [self.recvMessage;tmp];
                 self.bytesRead = numel(self.recvMessage);

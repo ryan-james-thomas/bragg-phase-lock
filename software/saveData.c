@@ -32,6 +32,7 @@ int main(int argc, char **argv)
   uint32_t tmp;
   uint32_t *data;
   uint8_t startFlag = 0;
+  uint8_t debugFlag = 0;
   FILE *ptr;
 
   clock_t start, stop;
@@ -59,6 +60,9 @@ int main(int argc, char **argv)
         break;
       case 'b':
         startFlag = 1;
+        break;
+      case 'f':
+        debugFlag = 1;
         break;
 
       case '?':
@@ -165,9 +169,8 @@ int main(int argc, char **argv)
   
   //Disable FIFO
   *((uint32_t *)(cfg + FIFO_LOC)) = 0;
-  if (saveType == 1 | saveType == 2) {
+  if ((saveType == 1 | saveType == 2) & debugFlag) {
     stop = clock();
-    printf("FIFO Disabled!\n");
     printf("Execution time: %.3f ms\n",(double)(stop - start)/CLOCKS_PER_SEC*1e3);
     printf("Time per read: %.3f us\n",(double)(stop - start)/CLOCKS_PER_SEC/(double)(numSamples)*1e6);
   }
