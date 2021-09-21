@@ -70,7 +70,7 @@ end component;
 
 signal polarity     :   std_logic;
 signal enable       :   std_logic;
-signal divPower     :   unsigned(3 downto 0);
+signal hold         :   std_logic;
 
 signal phaseNew, phaseOld   :   t_phase;
 signal phaseDiff            :   t_phase;
@@ -80,8 +80,6 @@ constant PHASE_POS_PI       :   t_phase     :=  shift_left(to_signed(1,phaseSum'
 signal validWrap            :   std_logic;
 signal validPI              :   std_logic;
 
-signal pi_o     :   t_phase;
-
 type t_status_local is (idle,wrapping,summing,output);
 signal state    :   t_status_local  :=  idle;
 
@@ -89,7 +87,15 @@ signal phase_o      :   t_phase;
 signal dds_phase    :   t_dds_phase;
 
 begin
-
+--
+-- Parse parameters and timing controller flags
+--
+polarity <= reg0(0);
+enable <= reg0(1) when tc_i.enable = '0' else tc_i.flags(0);
+hold <= tc_i.flags(1);
+--
+-- Instantiate PID controller
+--
 PI: PIController
 port map(
     clk         =>  clk,
@@ -100,20 +106,19 @@ port map(
     gains       =>  gains,
     enable_i    =>  enable,
     polarity_i  =>  polarity,
-    hold_i      =>  tc_i.flags(1),
+    hold_i      =>  hold,
     valid_o     =>  validPI,
     data_o      =>  phase_o
 );
-
+--
+-- Create output signals
+--
 dds_phase_o <= convertPhase(phase_o) when enable = '1' else convertPhase(phase_c);
 valid_o <= validPI when enable = '1' else validWrap;
 phaseSum_o <= phaseSum;
 --
 -- Unwrap phase
 --
-polarity <= reg0(0);
-enable <= reg0(1) when tc_i.enable = '0' else tc_i.flags(0);
-
 PhaseWrap: process(clk,aresetn) is
 begin
     if aresetn = '0' then
@@ -146,8 +151,8 @@ begin
             when summing =>
                 state <= idle;
                 validWrap <= '1';
-                if enable = '1' then
-                    phaseSum <= phaseSum + phaseDiff;
+                if enable = '1' and hold = '0' then
+                    phaseSum <= phaseSum + phaseDiff;                  
                 elsif enable = '0' then
                     phaseSum <= (others => '0');
                 end if;

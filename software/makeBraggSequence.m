@@ -54,7 +54,7 @@ numPulses = numel(power);
 width = fwhm/(2*sqrt(log(2)));
 
 %% Create vectors
-tPulse = (-5*width:dt:5*width)';
+tPulse = [-3*width:dt:3*width,100e-6]';
 t = repmat(tPulse,1,numPulses);
 for  nn = 1:numPulses
     t(:,nn) = t(:,nn) + t0 + (nn-1)*T;
@@ -80,6 +80,9 @@ for nn = 1:numPulses
     %
     % Set phases
     %
+%     if nn > 1
+%         ph(idx) = appliedPhase(nn - 1);
+%     end
     ph(idx) = appliedPhase(nn);
     %
     % Set frequencies
@@ -91,9 +94,11 @@ for nn = 1:numPulses
     if useHold
         flags(idx) = 2;
         i2 = find(idx,1,'last');
-        flags(i2) = 0;
-        freq(i2) = holdFreq;
-        P(i2) = 0.1;
+%         flags(i2) = 0;
+        flags(i2 + 1) = 0;
+        freq([i2,i2+1]) = holdFreq;
+        P([i2,i2+1]) = 0.1;
+        ph([i2,i2 + 1]) = appliedPhase(min(numPulses,nn+1));
     end
 end
 
