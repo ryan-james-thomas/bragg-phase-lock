@@ -1,13 +1,13 @@
-*.xpr
-*phase-lock*/
-!phase-lock.srcs/
-phase-lock.srcs/sources_1/bd/
-phase-lock.srcs/sources_1/ip/*/*
-!phase-lock.srcs/sources_1/ip/**/*.xci
+phase-lock*/
+NA/
+fpga/sources/system/ip/
+fpga/sources/system/ipshared/
+fpga/sources/system/ui
 
-!vhdl-sources/
+*.jou
+*.log
 
 *.asv
-
 data/
 .vscode/
+*~

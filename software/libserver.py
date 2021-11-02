@@ -96,7 +96,7 @@ class Message:
 
     def close(self):
         #Closes the socket connection
-        print("Closing connection (%s, %s)" % self.addr)
+        print("Closing connection (%s, %s)" % self.addr,end='\n\n')
         try:
             self.selector.unregister(self.sock)
         except Exception as e:
@@ -122,7 +122,7 @@ class Message:
             self.header = json.loads(self._recv_buffer[:self.header_len].decode('ascii'))
             self.msg_len = 4*self.header["length"]
 
-            print("Header:")
+            print("Header received by server:")
             print(self.header)
             self._recv_buffer = self._recv_buffer[self.header_len:]
 
@@ -141,22 +141,48 @@ class Message:
             
             #Write data using io-controller
             self.fpga_response = appcontroller.write(pmsg,self.header)
-            print("Message written to server")
+            print("Header written to client:")
             #At end of reading of data, set class to write mode
             self._set_selector_events_mask("w")
 
     
     def create_response(self):
         self.fpga_response["length"] = 4*len(self.fpga_response["data"])
-        data = self.fpga_response.pop("data");#self.fpga_response["data"]
-        # del(self.fpga_response["data"])
-        json_str = json.dumps(self.fpga_response)
-        print(json_str)
-        tmp = json_str.encode('ascii')
-        self._send_buffer = struct.pack("<H",len(tmp)) + tmp
-        for d in data:
-            # print(format(int(d,16)))
-            self._send_buffer += struct.pack("<I",int(d,16))
+        data = self.fpga_response.pop("data")
+
+        if ("saveType" in self.header) and self.header["saveType"] != 0:
+            #
+            # Get data from file
+            #
+            fid = open("SavedData.bin","rb")
+            data = fid.read()
+            self.fpga_response["length"] = len(data)
+            fid.close()
+            #
+            # Make header
+            #
+            json_str = json.dumps(self.fpga_response)
+            print(json_str)
+            tmp = json_str.encode('ascii')
+            self._send_buffer = struct.pack("<H",len(tmp)) + tmp
+            #Append data
+            self._send_buffer += data
+        else:
+            #
+            # Make header
+            #
+            json_str = json.dumps(self.fpga_response)
+            print(json_str)
+            tmp = json_str.encode('ascii')
+            self._send_buffer = struct.pack("<H",len(tmp)) + tmp
+            #
+            # Collate data from command line
+            #
+            print("Collating data...",end='')
+            for d in data:
+                self._send_buffer += struct.pack("<I",int(d,16))
+            print("Done")
+
         self.response_created = True
         
 

@@ -1,11 +1,11 @@
 //These are libraries which contain useful functions
+#include <ctype.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 
@@ -27,42 +27,57 @@ int main(int argc, char **argv)
   char *name = "/dev/mem";	//Name of the memory resource
 
   uint32_t i, incr = 0;
-  uint8_t saveType = 0;
+  uint8_t saveType = 2;
   uint8_t saveStreams = 0;
   uint32_t tmp;
   uint32_t *data;
   uint8_t startFlag = 0;
+  uint8_t debugFlag = 0;
   FILE *ptr;
 
   clock_t start, stop;
 
+  /*
+   * Parse the input arguments
+   */
+  int c;
+  while ((c = getopt(argc,argv,"n:t:psdb")) != -1) {
+    switch (c) {
+      case 'n':
+        numSamples = atoi(optarg);
+        break;
+      case 't':
+        saveType = atoi(optarg);
+        break;
+      case 'p':
+        saveStreams += 0b1;
+        break;
+      case 's':
+        saveStreams += 0b10;
+        break;
+      case 'd':
+        saveStreams += 0b100;
+        break;
+      case 'b':
+        startFlag = 1;
+        break;
+      case 'f':
+        debugFlag = 1;
+        break;
 
-/*The following if-else statement parses the input arguments.
-argc is the number of arguments.  argv is a 2D array of characters.
-argv[0] is the function name, and argv[n] is the n'th input argument*/
-  if (argc == 2) {
-    numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
-    saveType = 0;
-    saveStreams = 1;
-    startFlag = 0;
-  } else if (argc == 3) {
-    numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
-    saveType = atoi(argv[2]);;
-    saveStreams = 1;
-    startFlag = 0;
-  } else if (argc == 4) {
-    numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
-    saveType = atoi(argv[2]);;
-    saveStreams = atoi(argv[3]);
-    startFlag = 0;
-  } else if (argc == 5)  {
-    numSamples = atoi(argv[1]);	//atof converts the character array argv[1] to a floating point number
-    saveType = atoi(argv[2]);;
-    saveStreams = atoi(argv[3]);
-    startFlag = atoi(argv[4]);
-  } else {
-    printf("You must supply at least one argument!\n");
-    return 0;
+      case '?':
+        if (isprint (optopt))
+            fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+            fprintf (stderr,
+                    "Unknown option character `\\x%x'.\n",
+                    optopt);
+        return 1;
+
+      default:
+        abort();
+        break;
+    }
   }
 
   uint8_t saveFactor = (saveStreams & 1) + ((saveStreams & 0b10) >> 1) + ((saveStreams & 0b100) >> 2) +  ((saveStreams & 0b1000) >> 3) +  ((saveStreams & 0b10000) >> 4);
@@ -154,9 +169,8 @@ argv[0] is the function name, and argv[n] is the n'th input argument*/
   
   //Disable FIFO
   *((uint32_t *)(cfg + FIFO_LOC)) = 0;
-  if (saveType == 1 | saveType == 2) {
+  if ((saveType == 1 | saveType == 2) & debugFlag) {
     stop = clock();
-    printf("FIFO Disabled!\n");
     printf("Execution time: %.3f ms\n",(double)(stop - start)/CLOCKS_PER_SEC*1e3);
     printf("Time per read: %.3f us\n",(double)(stop - start)/CLOCKS_PER_SEC/(double)(numSamples)*1e6);
   }
