@@ -147,42 +147,17 @@ class Message:
 
     
     def create_response(self):
-        self.fpga_response["length"] = 4*len(self.fpga_response["data"])
         data = self.fpga_response.pop("data")
-
-        if ("saveType" in self.header) and self.header["saveType"] != 0:
-            #
-            # Get data from file
-            #
-            fid = open("SavedData.bin","rb")
-            data = fid.read()
-            self.fpga_response["length"] = len(data)
-            fid.close()
-            #
-            # Make header
-            #
-            json_str = json.dumps(self.fpga_response)
-            print(json_str)
-            tmp = json_str.encode('ascii')
-            self._send_buffer = struct.pack("<H",len(tmp)) + tmp
-            #Append data
-            self._send_buffer += data
-        else:
-            #
-            # Make header
-            #
-            json_str = json.dumps(self.fpga_response)
-            print(json_str)
-            tmp = json_str.encode('ascii')
-            self._send_buffer = struct.pack("<H",len(tmp)) + tmp
-            #
-            # Collate data from command line
-            #
-            print("Collating data...",end='')
-            for d in data:
-                self._send_buffer += struct.pack("<I",int(d,16))
-            print("Done")
-
+        self.fpga_response["length"] = len(data)
+        #
+        # Make header
+        #
+        json_str = json.dumps(self.fpga_response)
+        print(json_str)
+        tmp = json_str.encode('ascii')
+        self._send_buffer = struct.pack("<H",len(tmp)) + tmp
+        #Append data
+        self._send_buffer += data
         self.response_created = True
         
 

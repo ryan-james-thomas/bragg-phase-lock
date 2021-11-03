@@ -1,9 +1,3 @@
-phase-lock*/
-NA/
-fpga/sources/system/ip/
-fpga/sources/system/ipshared/
-fpga/sources/system/ui
-
 *.jou
 *.log
 
