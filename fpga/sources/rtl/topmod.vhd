@@ -133,7 +133,8 @@ end component;
 
 component TimingController is
     port(
-        clk         :   in  std_logic;
+        wrclk       :   in  std_logic;
+        rdclk       :   in  std_logic;
         aresetn     :   in  std_logic;
         reset_i     :   in  std_logic;
 
@@ -141,7 +142,7 @@ component TimingController is
         valid_i     :   in  std_logic;
 
         start_i     :   in  std_logic;
-        debug_o     :   out std_logic_vector(7 downto 0);
+        debug_o     :   out std_logic_vector(31 downto 0);
         data_o      :   out t_timing_control
     );
 end component;
@@ -241,7 +242,7 @@ signal tcData       :   t_param_reg;
 signal tcReset      :   std_logic;
 signal tcStart      :   std_logic;
 signal tc_o         :   t_timing_control;
-signal debug_o      :   std_logic_vector(7 downto 0);
+signal debug_o      :   std_logic_vector(31 downto 0);
 
 
 begin
@@ -400,7 +401,8 @@ end generate FIFO_GEN;
 --
 TC: TimingController
 port map(
-    clk         =>  adcclk(1),
+    wrclk       =>  sysclk(0),
+    rdclk       =>  adcclk(1),
     aresetn     =>  aresetn,
     reset_i     =>  tcReset,
     data_i      =>  tcData,
@@ -412,21 +414,21 @@ port map(
 --
 -- Save ADC data
 --
-memData_i <= std_logic_vector(resize(signed(adc_dat_a_i),16)) & std_logic_vector(resize(signed(adc_dat_b_i),16));
-memDataValid_i <= '1';
-memTrig <= triggers(4);
-SaveData: SaveADCData
-port map(
-    readClk     =>  sysclk(0),
-    writeClk    =>  adcclk(1),
-    aresetn     =>  aresetn,
-    data_i      =>  memData_i,
-    valid_i     =>  memDataValid_i,
-    numSamples  =>  numSamples,
-    trig_i      =>  memTrig,
-    bus_m       =>  mem_bus.m,
-    bus_s       =>  mem_bus.s  
-);
+--memData_i <= std_logic_vector(resize(signed(adc_dat_a_i),16)) & std_logic_vector(resize(signed(adc_dat_b_i),16));
+--memDataValid_i <= '1';
+--memTrig <= triggers(4);
+--SaveData: SaveADCData
+--port map(
+--    readClk     =>  sysclk(0),
+--    writeClk    =>  adcclk(1),
+--    aresetn     =>  aresetn,
+--    data_i      =>  memData_i,
+--    valid_i     =>  memDataValid_i,
+--    numSamples  =>  numSamples,
+--    trig_i      =>  memTrig,
+--    bus_m       =>  mem_bus.m,
+--    bus_s       =>  mem_bus.s  
+--);
 --
 -- Parse AXI data
 -- 
@@ -532,25 +534,25 @@ begin
                     --
                     -- Read phase data
                     --
-                    when X"02" =>
-                        if bus_m.valid(1) = '0' then
-                            bus_s.resp <= "11";
-                            comState <= finishing;
-                            mem_bus.m.trig <= '0';
-                            mem_bus.m.status <= idle;
-                        elsif mem_bus.s.valid = '1' then
-                            bus_s.data <= mem_bus.s.data;
-                            comState <= finishing;
-                            bus_s.resp <= "01";
-                            mem_bus.m.status <= idle;
-                            mem_bus.m.trig <= '0';
-                        elsif mem_bus.s.status = idle then
-                            mem_bus.m.addr <= bus_m.addr(MEM_ADDR_WIDTH + 1 downto 2);
-                            mem_bus.m.status <= waiting;
-                            mem_bus.m.trig <= '1';
-                         else
-                            mem_bus.m.trig <= '0';
-                        end if; 
+--                    when X"02" =>
+--                        if bus_m.valid(1) = '0' then
+--                            bus_s.resp <= "11";
+--                            comState <= finishing;
+--                            mem_bus.m.trig <= '0';
+--                            mem_bus.m.status <= idle;
+--                        elsif mem_bus.s.valid = '1' then
+--                            bus_s.data <= mem_bus.s.data;
+--                            comState <= finishing;
+--                            bus_s.resp <= "01";
+--                            mem_bus.m.status <= idle;
+--                            mem_bus.m.trig <= '0';
+--                        elsif mem_bus.s.status = idle then
+--                            mem_bus.m.addr <= bus_m.addr(MEM_ADDR_WIDTH + 1 downto 2);
+--                            mem_bus.m.status <= waiting;
+--                            mem_bus.m.trig <= '1';
+--                         else
+--                            mem_bus.m.trig <= '0';
+--                        end if; 
                         
                     when others => 
                         comState <= finishing;

@@ -1,5 +1,6 @@
 *.jou
 *.log
+*.str
 
 *.asv
 data/

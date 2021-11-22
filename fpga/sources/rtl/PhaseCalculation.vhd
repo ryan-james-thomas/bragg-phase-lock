@@ -91,7 +91,7 @@ signal dds_combined     :   std_logic_vector(31 downto 0);
 signal dds_sin          :   std_logic_vector(9 downto 0);
 signal dds_cos          :   std_logic_vector(9 downto 0);
 signal I, Q             :   std_logic_vector(23 downto 0);
-signal scaleFactor      :   unsigned(3 downto 0);
+signal scaleFactor      :   unsigned(7 downto 0);
 signal adc_14           :   std_logic_vector(13 downto 0);
 
 --
@@ -122,7 +122,7 @@ begin
 -- Parse parameters
 --
 cicRate <= unsigned(reg0(7 downto 0));
-scaleFactor <= unsigned(reg0(11 downto 8));
+scaleFactor <= unsigned(reg0(15 downto 8));
 
 --
 -- Generate mixing signals
@@ -200,8 +200,8 @@ port map(
 -- Compute phase via arctan
 --
 validPhase_i <= validQcic and validIcic;
-Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length));
-Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(cicRate+cicRate+cicRate)),Qphase_i'length));
+Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(scaleFactor)),Iphase_i'length));
+Qphase_i <= std_logic_vector(resize(shift_right(signed(cicQ_o),to_integer(scaleFactor)),Qphase_i'length));
 tdataPhase <= Qphase_i & Iphase_i;
 --iq_o <= (I => signed(Iphase_i), Q => signed(Qphase_i), valid => validPhase_i);
 --iq_o <= (I => resize(shift_right(signed(cicI_o),to_integer(cicRate+cicRate+cicRate)),Iphase_i'length),

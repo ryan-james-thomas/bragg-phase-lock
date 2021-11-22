@@ -43,7 +43,7 @@ type t_param_reg_array is array(natural range <>) of t_param_reg;
 --
 -- Defines AXI address and data widths
 --
-constant MEM_ADDR_WIDTH :   natural :=  14;
+constant MEM_ADDR_WIDTH :   natural :=  13;
 constant MEM_DATA_WIDTH :   natural :=  32;
 
 --
@@ -51,6 +51,7 @@ constant MEM_DATA_WIDTH :   natural :=  32;
 --
 subtype t_mem_addr is unsigned(MEM_ADDR_WIDTH-1 downto 0);
 subtype t_mem_data is std_logic_vector(MEM_DATA_WIDTH-1 downto 0);
+subtype t_mem_data_ext is std_logic_vector(3*MEM_DATA_WIDTH - 1 downto 0);
 
 type t_status is (idle,waiting,reading,writing,processing,running,finishing,counting);
 
@@ -71,6 +72,13 @@ type t_mem_bus_slave is record
     last    :   t_mem_addr;
     status  :   t_status;
 end record t_mem_bus_slave;
+
+type t_mem_bus_slave_ext is record
+    data    :   t_mem_data_ext;
+    valid   :   std_logic;
+    last    :   t_mem_addr;
+    status  :   t_status;
+end record t_mem_bus_slave_ext;
 
 type t_mem_bus is record
     m   :   t_mem_bus_master;
@@ -207,6 +215,8 @@ end CustomDataTypes;
 --------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------
 package body CustomDataTypes is
+
+
 
 function resizePhase ( ARG: signed) return t_dds_phase is
     constant PHASE_2PI  :   unsigned(CORDIC_WIDTH-1 downto 0)   :=  shift_left(to_unsigned(1,CORDIC_WIDTH),CORDIC_WIDTH-2);

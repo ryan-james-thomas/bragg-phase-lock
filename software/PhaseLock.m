@@ -28,6 +28,7 @@ classdef PhaseLock < handle
         % Phase calculation parameters
         %
         cicRate     %Log2(CIC rate reduction)
+        cicShift    %Number of bits to shift right by after filtering
         %
         % Phase control parameters
         %
@@ -155,6 +156,8 @@ classdef PhaseLock < handle
             self.cicRate = DeviceParameter([0,7],self.phaseCalcReg)...
                 .setLimits('lower',7,'upper',11)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
+            self.cicShift = DeviceParameter([8,15],self.phaseCalcReg)...
+                .setLimits('lower',0,'upper',255);
             %
             % Phase control signal
             %
@@ -218,6 +221,7 @@ classdef PhaseLock < handle
             % Phase calculation
             %
             self.cicRate.set(10);
+            self.cicShift.set(30);
             %
             % Phase control
             %
@@ -277,6 +281,7 @@ classdef PhaseLock < handle
             self.demod.get;
             self.amp.get;
             self.cicRate.get;
+            self.cicShift.get;
             self.phasec.get;
             
             self.enableFB.get;
@@ -324,7 +329,10 @@ classdef PhaseLock < handle
             %Debug
             self.auxReg.addr = '0100001C';
             self.auxReg.read;
-            data.debug = dec2bin(self.auxReg.value,8);
+            d = dec2bin(self.auxReg.value,32);
+            data.debug = d(32 - (3:-1:0));
+            data.last = bin2dec(d(32 - (15:-1:4)));
+            data.addr = bin2dec(d(32 - (27:-1:16)));
         end
         
         function self = start(self)
@@ -385,7 +393,7 @@ classdef PhaseLock < handle
             end
             
             self.conn.write(0,'mode','acquire phase','numSamples',numSamples,...
-                'saveStreams',saveFlags,'saveType',0,'startFlag',startFlag,...
+                'saveStreams',saveFlags,'startFlag',startFlag,...
                 'saveType',saveType,'return_mode','file');
             raw = typecast(self.conn.recvMessage,'uint8');
             d = self.convertData(raw,'phase',saveFlags);
@@ -408,6 +416,16 @@ classdef PhaseLock < handle
             ph = int32(ph/pi*2^(self.CORDIC_WIDTH-3));
             amp = uint32(amp*(2^self.AMP_WIDTH - 1));
             freq = uint32(freq*1e6/self.CLK*2^self.DDS_WIDTH);
+            flags = uint32(flags);
+            %
+            % Duplicate last instruction but with a delay of 0, indicating
+            % that the timing controller should stop
+            %
+            dt(end + 1) = 0;
+            ph(end + 1) = ph(end);
+            amp(end + 1) = amp(end);
+            freq(end + 1) = freq(end);
+            flags(end + 1) = flags(end);
             
             addr = self.timingReg.addr;
             d = zeros(4*numel(dt)+1,1,'uint32');
@@ -421,7 +439,7 @@ classdef PhaseLock < handle
                 d(mm) = typecast(amp(nn),'uint32');
                 mm = mm + 1;
                 d(mm) = typecast(dt(nn),'uint32');
-                d(mm) = d(mm) + bitshift(flags(nn),27);
+                d(mm) = d(mm) + bitshift(flags(nn),28);
                 mm = mm + 1;
             end
             self.resetTC;
@@ -484,6 +502,7 @@ classdef PhaseLock < handle
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Phase calculation parameters\n');
             self.cicRate.print('CIC Rate',strwidth,'%d');
+            self.cicShift.print('CIC Shift',strwidth,'%d');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Phase control parameters\n');
             self.phasec.print('Control phase',strwidth,'%.3f','rad');
