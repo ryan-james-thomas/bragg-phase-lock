@@ -114,6 +114,8 @@ else
     freq = [freq(1);freq];
 end
 
-
+if numel(P) > numel(t)
+    t = [t;t(end) + dt];
+end
 
 end

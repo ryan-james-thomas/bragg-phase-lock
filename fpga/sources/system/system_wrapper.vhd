@@ -1,8 +1,8 @@
 --Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------
---Tool Version: Vivado v.2020.2 (win64) Build 3064766 Wed Nov 18 09:12:45 MST 2020
---Date        : Fri Aug 13 11:55:01 2021
---Host        : RSPE-056285 running 64-bit major release  (build 9200)
+--Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
+--Date        : Sun Nov 21 19:35:28 2021
+--Host        : gottfreid running 64-bit Ubuntu 20.04.3 LTS
 --Command     : generate_target system_wrapper.bd
 --Design      : system_wrapper
 --Purpose     : IP block netlist
@@ -36,50 +36,52 @@ entity system_wrapper is
     FIXED_IO_ps_srstb : inout STD_LOGIC;
     adc_clk_n_i : in STD_LOGIC;
     adc_clk_p_i : in STD_LOGIC;
-    adc_csn_o : out STD_LOGIC;
-    adc_dat_a_i : in STD_LOGIC_VECTOR ( 13 downto 0 );
-    adc_dat_b_i : in STD_LOGIC_VECTOR ( 13 downto 0 );
-    adc_enc_n_o : out STD_LOGIC;
-    adc_enc_p_o : out STD_LOGIC;
-    dac_clk_o : out STD_LOGIC;
-    dac_dat_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
+    adc_dat_a_n_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_a_p_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_b_n_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_b_p_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_sync_o : out STD_LOGIC;
+    dac_a_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
+    dac_b_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
     dac_pwm_o : out STD_LOGIC_VECTOR ( 3 downto 0 );
-    dac_rst_o : out STD_LOGIC;
-    dac_sel_o : out STD_LOGIC;
-    dac_wrt_o : out STD_LOGIC;
-    daisy_n_i : in STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_n_o : out STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_p_i : in STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_p_o : out STD_LOGIC_VECTOR ( 1 downto 0 );
-    exp_n_tri_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
-    exp_p_tri_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
-    led_o : out STD_LOGIC_VECTOR ( 7 downto 0 )
+    dac_reset_o : out STD_LOGIC;
+    exp_n_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
+    exp_p_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    led_o : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    pll_hi_o : out STD_LOGIC;
+    pll_lo_o : out STD_LOGIC;
+    vinn_i : in STD_LOGIC_VECTOR ( 4 downto 0 );
+    vinp_i : in STD_LOGIC_VECTOR ( 4 downto 0 )
   );
 end system_wrapper;
 
 architecture STRUCTURE of system_wrapper is
   component system is
   port (
-    adc_dat_a_i : in STD_LOGIC_VECTOR ( 13 downto 0 );
-    adc_dat_b_i : in STD_LOGIC_VECTOR ( 13 downto 0 );
+    dac_pwm_o : out STD_LOGIC_VECTOR ( 3 downto 0 );
+    led_o : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    vinp_i : in STD_LOGIC_VECTOR ( 4 downto 0 );
+    vinn_i : in STD_LOGIC_VECTOR ( 4 downto 0 );
+    exp_n_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
+    exp_p_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    dac_a_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
+    dac_b_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
+    dac_reset_o : out STD_LOGIC;
+    pll_hi_o : out STD_LOGIC;
+    pll_lo_o : out STD_LOGIC;
+    adc_dat_a_p_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_a_n_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_b_p_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
+    adc_dat_b_n_i : in STD_LOGIC_VECTOR ( 6 downto 0 );
     adc_clk_p_i : in STD_LOGIC;
     adc_clk_n_i : in STD_LOGIC;
-    adc_enc_p_o : out STD_LOGIC;
-    adc_enc_n_o : out STD_LOGIC;
-    adc_csn_o : out STD_LOGIC;
-    dac_dat_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
-    dac_clk_o : out STD_LOGIC;
-    dac_rst_o : out STD_LOGIC;
-    dac_sel_o : out STD_LOGIC;
-    dac_wrt_o : out STD_LOGIC;
-    dac_pwm_o : out STD_LOGIC_VECTOR ( 3 downto 0 );
-    daisy_p_o : out STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_n_o : out STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_p_i : in STD_LOGIC_VECTOR ( 1 downto 0 );
-    daisy_n_i : in STD_LOGIC_VECTOR ( 1 downto 0 );
-    led_o : out STD_LOGIC_VECTOR ( 7 downto 0 );
-    exp_n_tri_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
-    exp_p_tri_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    adc_sync_o : out STD_LOGIC;
+    FIXED_IO_mio : inout STD_LOGIC_VECTOR ( 53 downto 0 );
+    FIXED_IO_ddr_vrn : inout STD_LOGIC;
+    FIXED_IO_ddr_vrp : inout STD_LOGIC;
+    FIXED_IO_ps_srstb : inout STD_LOGIC;
+    FIXED_IO_ps_clk : inout STD_LOGIC;
+    FIXED_IO_ps_porb : inout STD_LOGIC;
     DDR_cas_n : inout STD_LOGIC;
     DDR_cke : inout STD_LOGIC;
     DDR_ck_n : inout STD_LOGIC;
@@ -94,13 +96,7 @@ architecture STRUCTURE of system_wrapper is
     DDR_dm : inout STD_LOGIC_VECTOR ( 3 downto 0 );
     DDR_dq : inout STD_LOGIC_VECTOR ( 31 downto 0 );
     DDR_dqs_n : inout STD_LOGIC_VECTOR ( 3 downto 0 );
-    DDR_dqs_p : inout STD_LOGIC_VECTOR ( 3 downto 0 );
-    FIXED_IO_mio : inout STD_LOGIC_VECTOR ( 53 downto 0 );
-    FIXED_IO_ddr_vrn : inout STD_LOGIC;
-    FIXED_IO_ddr_vrp : inout STD_LOGIC;
-    FIXED_IO_ps_srstb : inout STD_LOGIC;
-    FIXED_IO_ps_clk : inout STD_LOGIC;
-    FIXED_IO_ps_porb : inout STD_LOGIC
+    DDR_dqs_p : inout STD_LOGIC_VECTOR ( 3 downto 0 )
   );
   end component system;
 begin
@@ -129,23 +125,21 @@ system_i: component system
       FIXED_IO_ps_srstb => FIXED_IO_ps_srstb,
       adc_clk_n_i => adc_clk_n_i,
       adc_clk_p_i => adc_clk_p_i,
-      adc_csn_o => adc_csn_o,
-      adc_dat_a_i(13 downto 0) => adc_dat_a_i(13 downto 0),
-      adc_dat_b_i(13 downto 0) => adc_dat_b_i(13 downto 0),
-      adc_enc_n_o => adc_enc_n_o,
-      adc_enc_p_o => adc_enc_p_o,
-      dac_clk_o => dac_clk_o,
-      dac_dat_o(13 downto 0) => dac_dat_o(13 downto 0),
+      adc_dat_a_n_i(6 downto 0) => adc_dat_a_n_i(6 downto 0),
+      adc_dat_a_p_i(6 downto 0) => adc_dat_a_p_i(6 downto 0),
+      adc_dat_b_n_i(6 downto 0) => adc_dat_b_n_i(6 downto 0),
+      adc_dat_b_p_i(6 downto 0) => adc_dat_b_p_i(6 downto 0),
+      adc_sync_o => adc_sync_o,
+      dac_a_o(13 downto 0) => dac_a_o(13 downto 0),
+      dac_b_o(13 downto 0) => dac_b_o(13 downto 0),
       dac_pwm_o(3 downto 0) => dac_pwm_o(3 downto 0),
-      dac_rst_o => dac_rst_o,
-      dac_sel_o => dac_sel_o,
-      dac_wrt_o => dac_wrt_o,
-      daisy_n_i(1 downto 0) => daisy_n_i(1 downto 0),
-      daisy_n_o(1 downto 0) => daisy_n_o(1 downto 0),
-      daisy_p_i(1 downto 0) => daisy_p_i(1 downto 0),
-      daisy_p_o(1 downto 0) => daisy_p_o(1 downto 0),
-      exp_n_tri_io(7 downto 0) => exp_n_tri_io(7 downto 0),
-      exp_p_tri_io(7 downto 0) => exp_p_tri_io(7 downto 0),
-      led_o(7 downto 0) => led_o(7 downto 0)
+      dac_reset_o => dac_reset_o,
+      exp_n_io(7 downto 0) => exp_n_io(7 downto 0),
+      exp_p_io(7 downto 0) => exp_p_io(7 downto 0),
+      led_o(7 downto 0) => led_o(7 downto 0),
+      pll_hi_o => pll_hi_o,
+      pll_lo_o => pll_lo_o,
+      vinn_i(4 downto 0) => vinn_i(4 downto 0),
+      vinp_i(4 downto 0) => vinp_i(4 downto 0)
     );
 end STRUCTURE;
