@@ -41,7 +41,7 @@ int main(int argc, char **argv)
    * Parse the input arguments
    */
   int c;
-  while ((c = getopt(argc,argv,"n:t:psdb")) != -1) {
+  while ((c = getopt(argc,argv,"n:t:psdbf")) != -1) {
     switch (c) {
       case 'n':
         numSamples = atoi(optarg);
@@ -113,10 +113,10 @@ int main(int argc, char **argv)
 //  printf("FIFO Reset!\n");
   usleep(1000);
   //Enable FIFO
+  *((uint32_t *)(cfg + FIFO_LOC)) = 1;
   if (startFlag == 1) {
     *((uint32_t *)(cfg + 0)) = (1 << 1);
   }
-  *((uint32_t *)(cfg + FIFO_LOC)) = 1;
 //  printf("FIFO Enabled!\n");
   //Record data
   if (saveType == 1 | saveType == 2) {

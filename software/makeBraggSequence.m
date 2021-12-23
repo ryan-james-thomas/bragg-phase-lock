@@ -11,6 +11,7 @@ chirp = 0;
 dt = 1e-6;
 useHold = 0;
 holdFreq = 5;
+holdAmp = 0.1;
 
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
@@ -38,6 +39,8 @@ else
                 useHold = v;
             case 'holdfreq'
                 holdFreq = v;
+            case 'holdamp'
+                holdAmp = v;
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
@@ -67,7 +70,7 @@ t = t(:);
 if useHold
     freq = holdFreq*ones(numel(t),1);
     flags = zeros(numel(t),1);
-    P = 0.1*ones(numel(t),1);
+    P = holdAmp*ones(numel(t),1);
 end
 
 for nn = 1:numPulses
@@ -97,7 +100,7 @@ for nn = 1:numPulses
 %         flags(i2) = 0;
         flags(i2 + 1) = 0;
         freq([i2,i2+1]) = holdFreq;
-        P([i2,i2+1]) = 0.1;
+        P([i2,i2+1]) = holdAmp;
         ph([i2,i2 + 1]) = appliedPhase(min(numPulses,nn+1));
     end
 end
@@ -107,7 +110,7 @@ ph = [ph(1);ph];
 flags = [0;flags];
 flags = flags + 1;
 if useHold
-    P = [0.1;P];
+    P = [holdAmp;P];
     freq = [holdFreq;freq];
 else
     P = [P(1);P];

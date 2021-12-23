@@ -80,7 +80,7 @@ classdef PhaseLock < handle
         CORDIC_WIDTH = 24;              %Bit width of the measured phase
         AMP_WIDTH = 12;                 %Bit width of amplitude scaling
         DAC_WIDTH = 14;                 %Bit width of DAC
-        ADC_WIDTH = 12;                 %Bit width of ADC
+        ADC_WIDTH = 14;                 %Bit width of ADC
     end
     
     methods
@@ -389,7 +389,7 @@ classdef PhaseLock < handle
             end
             
             if nargin < 5
-                saveType = 2;
+                saveType = 1;
             end
             
             self.conn.write(0,'mode','acquire phase','numSamples',numSamples,...
