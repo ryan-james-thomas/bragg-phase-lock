@@ -17,6 +17,7 @@ classdef PhaseLock < handle
         useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
         useManual   %True to use manual values, false to use timing controller values
         useTCDemod  %True to use the TC df output as the OUT1 frequency and demod freq, for testing
+        disableExtTrig %Set to true to disable the external trigger
         %
         % Frequency parameters
         %
@@ -135,6 +136,9 @@ classdef PhaseLock < handle
                 .setLimits('lower',0,'upper',1);
             self.useTCDemod = DeviceParameter([6,6],self.topReg)...
                 .setLimits('lower',0,'upper',1);
+            self.disableExtTrig = DeviceParameter([7,7],self.topReg)...
+                .setLimits('lower',0,'upper',1);
+            
             %
             % Frequency generation
             %
@@ -210,10 +214,11 @@ classdef PhaseLock < handle
             self.useSetDemod.set(0);
             self.useManual.set(1);
             self.useTCDemod.set(0);
+            self.disableExtTrig.set(0);
             %
             % Frequency parameters
             %
-            self.f0.set(35);
+            self.f0.set(40);
             self.df.set(0.125);
             self.demod.set(1);
             self.amp.set(1);
@@ -227,7 +232,7 @@ classdef PhaseLock < handle
             %
             self.phasec.set(0);
             self.enableFB.set(0);
-            self.polarity.set(0);
+            self.polarity.set(1);
             self.Kp.set(50);
             self.Ki.set(140);
             self.Kd.set(0);
@@ -276,6 +281,7 @@ classdef PhaseLock < handle
             self.useSetDemod.get;
             self.useManual.get;
             self.useTCDemod.get;
+            self.disableExtTrig.get;
             self.f0.get;
             self.df.get;
             self.demod.get;
@@ -493,6 +499,7 @@ classdef PhaseLock < handle
             self.useSetDemod.print('Use fixed demod freq.',strwidth,'%d');
             self.useManual.print('Use manual',strwidth,'%d');
             self.useTCDemod.print('Use TC demod.',strwidth,'%d');
+            self.disableExtTrig.print('Disable ext. trig.',strwidth,'%d');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Frequency Parameters\n');
             self.f0.print('Common frequency',strwidth,'%.2f','MHz');

@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x3C5CA28F28A1307F",
+      "boundary_crc": "0xF93C6D6A0E9F3D19",
       "device": "xc7z020clg400-3",
       "gen_directory": "../../../../signallab.gen/sources_1/bd/system",
       "name": "system",
@@ -240,6 +240,9 @@
       },
       "adc_sync_o": {
         "direction": "O"
+      },
+      "trig_i": {
+        "direction": "I"
       }
     },
     "components": {
@@ -2442,16 +2445,10 @@
           }
         },
         "interface_nets": {
-          "Conn1": {
+          "axi_protocol_convert_0_M_AXI": {
             "interface_ports": [
-              "DDR",
-              "processing_system7/DDR"
-            ]
-          },
-          "Conn2": {
-            "interface_ports": [
-              "FIXED_IO",
-              "processing_system7/FIXED_IO"
+              "axi_protocol_convert_0/M_AXI",
+              "AXI_Parse_0/s_axi"
             ]
           },
           "processing_system7_M_AXI_GP0": {
@@ -2460,10 +2457,16 @@
               "processing_system7/M_AXI_GP0"
             ]
           },
-          "axi_protocol_convert_0_M_AXI": {
+          "Conn2": {
             "interface_ports": [
-              "axi_protocol_convert_0/M_AXI",
-              "AXI_Parse_0/s_axi"
+              "FIXED_IO",
+              "processing_system7/FIXED_IO"
+            ]
+          },
+          "Conn1": {
+            "interface_ports": [
+              "DDR",
+              "processing_system7/DDR"
             ]
           }
         },
@@ -3030,6 +3033,9 @@
             "left": "7",
             "right": "0"
           },
+          "trig_i": {
+            "direction": "I"
+          },
           "pll_hi_o": {
             "direction": "O"
           },
@@ -3231,6 +3237,12 @@
         "ports": [
           "PS/FCLK_RESET3_N",
           "ADC_Processing/aresetn"
+        ]
+      },
+      "trig_i_1": {
+        "ports": [
+          "trig_i",
+          "topmod_0/trig_i"
         ]
       }
     },

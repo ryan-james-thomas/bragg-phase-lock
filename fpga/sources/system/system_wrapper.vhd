@@ -47,6 +47,7 @@ entity system_wrapper is
     dac_reset_o : out STD_LOGIC;
     exp_n_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
     exp_p_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    trig_i  :   in  STD_LOGIC;
     led_o : out STD_LOGIC_VECTOR ( 7 downto 0 );
     pll_hi_o : out STD_LOGIC;
     pll_lo_o : out STD_LOGIC;
@@ -64,6 +65,7 @@ architecture STRUCTURE of system_wrapper is
     vinn_i : in STD_LOGIC_VECTOR ( 4 downto 0 );
     exp_n_io : in STD_LOGIC_VECTOR ( 7 downto 0 );
     exp_p_io : out STD_LOGIC_VECTOR ( 7 downto 0 );
+    trig_i  :   in  STD_LOGIC;
     dac_a_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
     dac_b_o : out STD_LOGIC_VECTOR ( 13 downto 0 );
     dac_reset_o : out STD_LOGIC;
@@ -136,6 +138,7 @@ system_i: component system
       dac_reset_o => dac_reset_o,
       exp_n_io(7 downto 0) => exp_n_io(7 downto 0),
       exp_p_io(7 downto 0) => exp_p_io(7 downto 0),
+      trig_i    =>  trig_i,
       led_o(7 downto 0) => led_o(7 downto 0),
       pll_hi_o => pll_hi_o,
       pll_lo_o => pll_lo_o,

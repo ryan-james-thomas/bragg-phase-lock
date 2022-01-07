@@ -29,6 +29,7 @@ entity topmod is
         --
         ext_i           :   in  std_logic_vector(7 downto 0);
         ext_o           :   out std_logic_vector(7 downto 0);
+        trig_i          :   in  std_logic;
         --
         -- PLL outputs
         --
@@ -186,6 +187,7 @@ signal useSetDemod  :   std_logic;
 signal dfshift      :   unsigned(3 downto 0);
 signal useManual    :   std_logic;
 signal useTCDemod   :   std_logic;
+signal disableExtTrig   :   std_logic;
 signal dac          :   t_dac_array;
 
 --
@@ -259,10 +261,12 @@ dfshift <= unsigned(topReg(3 downto 0));    --Integer shift right for demodulati
 useSetDemod <= topReg(4);                   --Use a set demodulation frequency '1' or a shifted one '0'
 useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
 useTCDemod <= topReg(6);                    --Use TC df output as FTW1 and demod frequency inputs
+disableExtTrig <= topReg(7);
 ampSet <= unsigned(topReg(31 downto 32 - ampSet'length));
 
 regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
-tcStart <= triggers(1);                     --Start the timing controller
+tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));      --Start the timing controller
+ext_o(0) <= trig_i;
 --triggers(2) is used in the extended FIFO reset
 --tcReset <= triggers(3);                     --Resets the timing controller FIFO
 
