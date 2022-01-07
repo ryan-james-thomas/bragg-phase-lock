@@ -398,9 +398,9 @@ classdef PhaseLock < handle
                 saveType = 1;
             end
             
-            self.conn.write(0,'mode','acquire phase','numSamples',numSamples,...
-                'saveStreams',saveFlags,'startFlag',startFlag,...
-                'saveType',saveType,'return_mode','file');
+            self.conn.write(0,'mode','command','cmd',...
+                {'./saveData','-n',sprintf('%d',round(numSamples)),'-t',saveType,saveFlags,startFlag},...
+                'return_mode','file');
             raw = typecast(self.conn.recvMessage,'uint8');
             d = self.convertData(raw,'phase',saveFlags);
             self.data = d;
@@ -449,7 +449,8 @@ classdef PhaseLock < handle
                 mm = mm + 1;
             end
             self.resetTC;
-            self.conn.write(d,'mode','write data');
+            self.conn.write(d,'mode','command','cmd',...
+                {'./writeFile',sprintf('%d',round(numel(d) -1))});
         end
         
         function [d,t] = getRAM(self,numSamples)
@@ -468,7 +469,9 @@ classdef PhaseLock < handle
 %                 self.conn.keepAlive = false;
                 numSamples = self.lastSample.value;
             end
-            self.conn.write(0,'mode','fetch ram','numSamples',numSamples,'return_mode','file','print',true);
+            self.conn.write(0,'mode','command','cmd',...
+                {'./fetchRAM',sprintf('%d',round(numSamples))},...
+                'return_mode','file');
             raw = typecast(self.conn.recvMessage,'uint8');
             
             d = self.convertRAMData(raw);

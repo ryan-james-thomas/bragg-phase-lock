@@ -44,15 +44,19 @@ classdef IOSettings < handle
         
         function self = write(self)
             for nn = 1:numel(self.attenuation)
-                self.parent.conn.write(0,'mode','set input gain','port',nn,'value',self.convert(self.attenuation{nn}));
+                self.parent.conn.write(0,'mode','command','cmd',...
+                    {'./setGain','-i','-p',sprintf('%d',nn),'-v',sprintf('%d',self.convert(self.attenuation{nn}))});
+                
             end
             
             for nn = 1:numel(self.gain)
-                self.parent.conn.write(0,'mode','set output gain','port',nn,'value',self.convert(self.gain{nn}));
+                self.parent.conn.write(0,'mode','command','cmd',...
+                    {'./setGain','-o','-p',sprintf('%d',nn),'-v',sprintf('%d',self.convert(self.gain{nn}))});
             end
             
             for nn = 1:numel(self.coupling)
-                self.parent.conn.write(0,'mode','set coupling','port',nn,'value',self.convert(self.coupling{nn}));
+                self.parent.conn.write(0,'mode','command','cmd',...
+                    {'./setGain','-c','-p',sprintf('%d',nn),'-v',sprintf('%d',self.convert(self.coupling{nn}))});
             end
         end
         
