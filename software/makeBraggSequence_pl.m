@@ -1,4 +1,4 @@
-function [Pout,ph,freq,flags,t] = makeBraggSequence(varargin)
+function [Pout,ph,freq,flags,t] = makeBraggSequence_pl(varargin)
 
 %% Set up variables and parse inputs
 t0 = 10e-3;
@@ -73,7 +73,7 @@ t = t(:);
 if useHold
     freq = holdFreq*ones(numel(t),1);
     flags = zeros(numel(t),1);
-    P = holdAmp*ones(numel(t),1);
+    P = NaN*ones(numel(t),1);
 end
 
 for nn = 1:numPulses
@@ -103,7 +103,7 @@ for nn = 1:numPulses
 %         flags(i2) = 0;
         flags(i2 + 1) = 0;
         freq([i2,i2+1]) = holdFreq;
-        P([i2,i2+1]) = holdAmp;
+        P([i2,i2+1]) = NaN;
         ph([i2,i2 + 1]) = appliedPhase(min(numPulses,nn+1));
     else
         i2 = find(idx,1,'last');
@@ -119,7 +119,7 @@ if useHold
     flags = [0;0;0;flags];
     flags = flags + 1;
     flags(1:2) = 0;   %Disables lock for first point with no amplitude
-    P = [0;holdAmp;holdAmp;P];
+    P = [0;NaN;NaN;P];
     freq = [holdFreq;holdFreq;holdFreq;freq];
 else
     t = [0;t];
@@ -134,15 +134,13 @@ if numel(P) > numel(t)
     t = [t;t(end) + dt];
 end
 
-cp = (calibration.power.ch1(:,2) - calibration.power.ch1(1,2)) + (calibration.power.ch2(:,2) - calibration.power.ch2(1,2));
-f = @(x) interp1(cp./max(cp),calibration.power.ch1(:,1),x,'pchip');
-
 cal.power.ch1(:,2) = (cal.power.ch1(:,2) - cal.power.ch1(1,2))./max(cal.power.ch2(:,2));
 cal.power.ch2(:,2) = (cal.power.ch2(:,2) - cal.power.ch2(1,2))./max(cal.power.ch2(:,2));
 Pout(:,1) = interp1(cal.power.ch1(:,2),cal.power.ch1(:,1),P,'pchip');
 Pout(:,2) = interp1(cal.power.ch2(:,2),cal.power.ch2(:,1),P,'pchip');
 
-if useHold
+Pout(isnan(Pout)) = holdAmp;
+if ~useHold
     flags = 0*flags;
 end
 
