@@ -62,7 +62,7 @@ width = fwhm/(2*sqrt(log(2)));
 
 %% Create vectors
 max_t_pulse = 3*width;
-tPulse = [-500e-6,-max_t_pulse:dt:max_t_pulse]';
+tPulse = [-1000e-6,-max_t_pulse:dt:max_t_pulse]';
 t = repmat(tPulse,1,numPulses);
 for  nn = 1:numPulses
     t(:,nn) = t(:,nn) + t0 + (nn-1)*T;
