@@ -3069,16 +3069,16 @@
       }
     },
     "interface_nets": {
-      "PS_FIXED_IO": {
-        "interface_ports": [
-          "FIXED_IO",
-          "PS/FIXED_IO"
-        ]
-      },
       "PS_DDR": {
         "interface_ports": [
           "DDR",
           "PS/DDR"
+        ]
+      },
+      "PS_FIXED_IO": {
+        "interface_ports": [
+          "FIXED_IO",
+          "PS/FIXED_IO"
         ]
       }
     },

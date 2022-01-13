@@ -51,7 +51,7 @@ constant MEM_DATA_WIDTH :   natural :=  32;
 --
 subtype t_mem_addr is unsigned(MEM_ADDR_WIDTH-1 downto 0);
 subtype t_mem_data is std_logic_vector(MEM_DATA_WIDTH-1 downto 0);
-subtype t_mem_data_ext is std_logic_vector(3*MEM_DATA_WIDTH - 1 downto 0);
+subtype t_mem_data_ext is std_logic_vector(108 - 1 downto 0);
 
 type t_status is (idle,waiting,reading,writing,processing,running,finishing,counting);
 
@@ -175,6 +175,7 @@ constant INIT_IQ_DATA   :   t_iq_data   :=  (I  =>  (others => '0'), Q => (other
 
 constant AMP_MULT_WIDTH :   natural :=  12;                                                     
 subtype t_amp_mult is unsigned(AMP_MULT_WIDTH - 1 downto 0);
+type t_amp_array is array(1 downto 0) of t_amp_mult;
 constant TC_FLAG_WIDTH  :   natural :=  4;
 subtype t_tc_flags is std_logic_vector(TC_FLAG_WIDTH - 1 downto 0);
 
@@ -182,7 +183,7 @@ type t_timing_control is record
     enable  :   std_logic;
     df      :   t_dds_phase;
     pow     :   t_phase;
-    amp     :   t_amp_mult;
+    amp     :   t_amp_array;
     valid   :   std_logic;
     flags   :   t_tc_flags;
 end record t_timing_control;
@@ -192,7 +193,7 @@ constant INIT_TIMING_CONTROL    :   t_timing_control    :=  (enable => '0',
                                                              flags  => (others => '0'),
                                                              df     => (others => '0'),
                                                              pow    => (others => '0'),
-                                                             amp    => (others => '0'));
+                                                             amp    => (others => (others => '0')));
 
 
 function resizePhase ( ARG: signed) return t_dds_phase;

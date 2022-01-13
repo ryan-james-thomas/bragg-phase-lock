@@ -62,7 +62,7 @@ component DualChannelDDS is
         ftw1            :   in  t_dds_phase;
         ftw2            :   in  t_dds_phase;
         
-        amp_i           :   in  t_amp_mult;
+        amp_i           :   in  t_amp_array;
         
         dac_o           :   out t_dac_array
     );       
@@ -182,7 +182,7 @@ signal dfmodManual  :   t_dds_phase     :=  (others => '0');
 signal dfmod_i      :   t_dds_phase     :=  (others => '0');
 signal pow          :   t_dds_phase     :=  (others => '0');
 signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
-signal amp_i, ampSet:   t_amp_mult;
+signal amp_i, ampSet:   t_amp_array;
 signal useSetDemod  :   std_logic;
 signal dfshift      :   unsigned(3 downto 0);
 signal useManual    :   std_logic;
@@ -262,7 +262,8 @@ useSetDemod <= topReg(4);                   --Use a set demodulation frequency '
 useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
 useTCDemod <= topReg(6);                    --Use TC df output as FTW1 and demod frequency inputs
 disableExtTrig <= topReg(7);
-ampSet <= unsigned(topReg(31 downto 32 - ampSet'length));
+ampSet(0) <= unsigned(topReg(19 downto 8));
+ampSet(1) <= unsigned(topReg(31 downto 20));
 
 regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
 tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));      --Start the timing controller
@@ -523,13 +524,14 @@ begin
                             when X"000000" => readOnly(bus_m,bus_s,comState,df);
                             when X"000004" => readOnly(bus_m,bus_s,comState,dfmod_i);
                             when X"000008" => readOnly(bus_m,bus_s,comState,tc_o.df);
-                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp);
-                            when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.pow);
-                            when X"000014" => readOnly(bus_m,bus_s,comState,tc_o.flags);
-                            when X"000018" => readOnly(bus_m,bus_s,comState,phase_c);
-                            when X"00001C" => readOnly(bus_m,bus_s,comState,debug_o);
-                            when X"000020" => readOnly(bus_m,bus_s,comState,mem_bus.s.last);
-                            when X"000024" => readOnly(bus_m,bus_s,comState,memData_i);
+                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp(0));
+                            when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.amp(1));
+                            when X"000014" => readOnly(bus_m,bus_s,comState,tc_o.pow);
+                            when X"000018" => readOnly(bus_m,bus_s,comState,tc_o.flags);
+                            when X"00001C" => readOnly(bus_m,bus_s,comState,phase_c);
+                            when X"000020" => readOnly(bus_m,bus_s,comState,debug_o);
+                            when X"000024" => readOnly(bus_m,bus_s,comState,mem_bus.s.last);
+                            when X"000028" => readOnly(bus_m,bus_s,comState,memData_i);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";

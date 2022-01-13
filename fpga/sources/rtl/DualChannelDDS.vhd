@@ -14,7 +14,7 @@ entity DualChannelDDS is
         ftw1            :   in  t_dds_phase;
         ftw2            :   in  t_dds_phase;
         
-        amp_i           :   in  t_amp_mult;
+        amp_i           :   in  t_amp_array;
         
         dac_o           :   out t_dac_array
     );    
@@ -62,7 +62,7 @@ signal dds2_tvalid      :   std_logic;
 
 signal dds1_mult_i, dds2_mult_i :   std_logic_vector(9 downto 0);
 signal dds1_mult_o, dds2_mult_o :   std_logic_vector(21 downto 0);
-signal amp_slv  :   std_logic_vector(amp_i'length - 1 downto 0);
+signal amp_slv_1, amp_slv_2  :   std_logic_vector(t_amp_mult'length - 1 downto 0);
 
 begin
 --
@@ -92,14 +92,15 @@ port map(
 --
 -- Output scaling
 --
-amp_slv <= std_logic_vector(amp_i);
+amp_slv_1 <= std_logic_vector(amp_i(0));
+amp_slv_2 <= std_logic_vector(amp_i(1));
 dds1_mult_i <= std_logic_vector(resize(signed(dds1_tdata),dds1_mult_i'length));
 dds2_mult_i <= std_logic_vector(resize(signed(dds2_tdata),dds2_mult_i'length));
 Mult1: OutputMultiplier
 port map(
     clk =>  clk,
     A   =>  dds1_mult_i,
-    B   =>  amp_slv,
+    B   =>  amp_slv_1,
     P   =>  dds1_mult_o
 );
 
@@ -107,7 +108,7 @@ Mult2: OutputMultiplier
 port map(
     clk =>  clk,
     A   =>  dds2_mult_i,
-    B   =>  amp_slv,
+    B   =>  amp_slv_2,
     P   =>  dds2_mult_o
 );
 --

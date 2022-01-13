@@ -1,4 +1,4 @@
-function [P,ph,freq,flags,t] = makeBraggSequence(varargin)
+function [Pout,ph,freq,flags,t] = makeBraggSequence(varargin)
 
 %% Set up variables and parse inputs
 t0 = 10e-3;
@@ -14,8 +14,7 @@ dt = 1e-6;
 useHold = 0;
 holdFreq = 5;
 holdAmp = 0.1;
-calibration = load('calibration-high-gain','power');
-% calibration = load('calibration','power');
+cal = load('calibration-high-gain','power');
 
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
@@ -138,6 +137,13 @@ end
 cp = (calibration.power.ch1(:,2) - calibration.power.ch1(1,2)) + (calibration.power.ch2(:,2) - calibration.power.ch2(1,2));
 f = @(x) interp1(cp./max(cp),calibration.power.ch1(:,1),x,'pchip');
 
-P = f(P);
+cal.power.ch1(:,2) = (cal.power.ch1(:,2) - cal.power.ch1(1,2))./max(cal.power.ch2(:,2));
+cal.power.ch2(:,2) = (cal.power.ch2(:,2) - cal.power.ch2(1,2))./max(cal.power.ch2(:,2));
+Pout(:,1) = interp1(cal.power.ch1(:,2),cal.power.ch1(:,1),P,'pchip');
+Pout(:,2) = interp1(cal.power.ch2(:,2),cal.power.ch2(:,1),P,'pchip');
+
+if useHold
+    flags = 0*flags;
+end
 
 end

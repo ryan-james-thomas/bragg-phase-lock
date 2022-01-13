@@ -118,11 +118,11 @@ begin
                     memState <= amp;
                     
                 when amp =>
-                    mem_data_i(DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_POW_WIDTH + DPG_FREQ_WIDTH) <= data_i(DPG_AMP_WIDTH - 1 downto 0);
+                    mem_data_i(2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_POW_WIDTH + DPG_FREQ_WIDTH) <= data_i(2*DPG_AMP_WIDTH - 1 downto 0);
                     memState <= duration;
                     
                 when duration =>
-                    mem_data_i(DPG_FLAG_WIDTH + DPG_TIME_WIDTH + DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH) <= data_i(DPG_FLAG_WIDTH + DPG_TIME_WIDTH - 1 downto 0);
+                    mem_data_i(DPG_FLAG_WIDTH + DPG_TIME_WIDTH + 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH) <= data_i(DPG_FLAG_WIDTH + DPG_TIME_WIDTH - 1 downto 0);
                     memState <= pow;
                     wrTrig <= '1';
             end case;
@@ -151,9 +151,10 @@ port map(
 --
 tc_data.pow     <= resize(signed(bus_o.data(DPG_POW_WIDTH - 1 downto 0)),t_phase'length);
 tc_data.df      <= resize(unsigned(bus_o.data(DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_POW_WIDTH)),t_dds_phase'length);
-tc_data.amp     <= resize(unsigned(bus_o.data(DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_POW_WIDTH + DPG_FREQ_WIDTH)),t_amp_mult'length);
-delay           <= resize(unsigned(bus_o.data(DPG_TIME_WIDTH + DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH)),delay'length);
-tc_data.flags   <= bus_o.data(DPG_FLAG_WIDTH + DPG_TIME_WIDTH + DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_TIME_WIDTH + DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH);
+tc_data.amp(0)  <= resize(unsigned(bus_o.data(DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_POW_WIDTH + DPG_FREQ_WIDTH)),t_amp_mult'length);
+tc_data.amp(1)  <= resize(unsigned(bus_o.data(2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_AMP_WIDTH + DPG_POW_WIDTH + DPG_FREQ_WIDTH)),t_amp_mult'length);
+delay           <= resize(unsigned(bus_o.data(DPG_TIME_WIDTH + 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH)),delay'length);
+tc_data.flags   <= bus_o.data(DPG_FLAG_WIDTH + DPG_TIME_WIDTH + 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH - 1 downto DPG_TIME_WIDTH + 2*DPG_AMP_WIDTH + DPG_FREQ_WIDTH + DPG_POW_WIDTH);
 
 --
 -- Main delay generator

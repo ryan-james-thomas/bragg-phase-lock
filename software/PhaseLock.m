@@ -151,7 +151,10 @@ classdef PhaseLock < handle
             self.demod = DeviceParameter([0,26],self.freqDemodReg)...
                 .setLimits('lower',0,'upper',2^27)...
                 .setFunctions('to',@(x) x*1e6/self.CLK*2^self.DDS_WIDTH,'from',@(x) x/2^self.DDS_WIDTH*self.CLK/1e6);
-            self.amp = DeviceParameter([20,31],self.topReg)...
+            self.amp = DeviceParameter([8,19],self.topReg)...
+                .setLimits('lower',0,'upper',1)...
+                .setFunctions('to',@(x) x*(2^self.AMP_WIDTH - 1),'from',@(x) x/(2^self.AMP_WIDTH - 1));
+            self.amp(2) = DeviceParameter([20,31],self.topReg)...
                 .setLimits('lower',0,'upper',1)...
                 .setFunctions('to',@(x) x*(2^self.AMP_WIDTH - 1),'from',@(x) x/(2^self.AMP_WIDTH - 1));
             %
@@ -221,7 +224,8 @@ classdef PhaseLock < handle
             self.f0.set(40);
             self.df.set(0.125);
             self.demod.set(1);
-            self.amp.set(1);
+            self.amp(1).set(0);
+            self.amp(2).set(0);
             %
             % Phase calculation
             %
@@ -316,24 +320,28 @@ classdef PhaseLock < handle
             self.auxReg.addr = '01000008';
             self.auxReg.read;
             data.tc_df = double(self.auxReg.value)/2^self.DDS_WIDTH*125;
-            %tc_amp
+            %tc_amp(1)
             self.auxReg.addr = '0100000C';
             self.auxReg.read;
-            data.tc_amp = double(self.auxReg.value)/(2^self.AMP_WIDTH - 1);
-            %tc_pow
+            data.tc_amp(1) = double(self.auxReg.value)/(2^self.AMP_WIDTH - 1);
+            %tc_amp(2)
             self.auxReg.addr = '01000010';
+            self.auxReg.read;
+            data.tc_amp(2) = double(self.auxReg.value)/(2^self.AMP_WIDTH - 1);
+            %tc_pow
+            self.auxReg.addr = '01000014';
             self.auxReg.read;
             data.tc_pow = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
             %tc_flags
-            self.auxReg.addr = '01000014';
+            self.auxReg.addr = '01000018';
             self.auxReg.read;
             data.tc_flags = dec2bin(self.auxReg.value,8);
             %phase_c
-            self.auxReg.addr = '01000018';
+            self.auxReg.addr = '0100001C';
             self.auxReg.read;
             data.phasec = double(typecast(self.auxReg.value,'int32'))/2^(self.CORDIC_WIDTH-3)*pi;
             %Debug
-            self.auxReg.addr = '0100001C';
+            self.auxReg.addr = '01000020';
             self.auxReg.read;
             d = dec2bin(self.auxReg.value,32);
             data.debug = d(32 - (3:-1:0));
@@ -410,7 +418,9 @@ classdef PhaseLock < handle
         function uploadTiming(self,t,ph,amp,freq,flags)
             t = t(:);
             ph = ph(:);
-            amp = amp(:);
+            if size(amp,2) ~= 2
+                error('Amplitudes must be supplied as an Nx2 array!');
+            end
             freq = freq(:);
             if nargin < 6
                 flags = zeros(numel(freq),1);
@@ -429,7 +439,7 @@ classdef PhaseLock < handle
             %
             dt(end + 1) = 0;
             ph(end + 1) = ph(end);
-            amp(end + 1) = amp(end);
+            amp(end + 1,:) = amp(end,:);
             freq(end + 1) = freq(end);
             flags(end + 1) = flags(end);
             
@@ -442,7 +452,7 @@ classdef PhaseLock < handle
                 mm = mm + 1;
                 d(mm) = typecast(freq(nn),'uint32');
                 mm = mm + 1;
-                d(mm) = typecast(amp(nn),'uint32');
+                d(mm) = bitshift(typecast(amp(nn,2),'uint32'),12) + typecast(amp(nn,1),'uint32');
                 mm = mm + 1;
                 d(mm) = typecast(dt(nn),'uint32');
                 d(mm) = d(mm) + bitshift(flags(nn),28);
@@ -450,7 +460,7 @@ classdef PhaseLock < handle
             end
             self.resetTC;
             self.conn.write(d,'mode','command','cmd',...
-                {'./writeFile',sprintf('%d',round(numel(d) -1))});
+                {'./writeFile',sprintf('%d',round(numel(d) - 1))});
         end
         
         function [d,t] = getRAM(self,numSamples)
@@ -508,7 +518,8 @@ classdef PhaseLock < handle
             self.f0.print('Common frequency',strwidth,'%.2f','MHz');
             self.df.print('Frequency difference',strwidth,'%.3f','MHz');
             self.demod.print('Demodulation frequency',strwidth,'%.3f','MHz');
-            self.amp.print('Amplitude',strwidth,'%.3f','V');
+            self.amp(1).print('Amplitude 1',strwidth,'%.3f','V');
+            self.amp(2).print('Amplitude 2',strwidth,'%.3f','V');
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Phase calculation parameters\n');
             self.cicRate.print('CIC Rate',strwidth,'%d');

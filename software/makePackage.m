@@ -2,7 +2,7 @@ function makePackage(t,ph,amp,freq,flags)
 
 t = t(:);
 ph = ph(:);
-amp = amp(:);
+% amp = amp(:);
 freq = freq(:);
 if nargin < 6
     flags = zeros(numel(freq),1);
@@ -21,7 +21,7 @@ flags = uint32(flags);
 %
 dt(end + 1) = 0;
 ph(end + 1) = ph(end);
-amp(end + 1) = amp(end);
+amp(end + 1,:) = amp(end,:);
 freq(end + 1) = freq(end);
 flags(end + 1) = flags(end);
 
@@ -32,7 +32,7 @@ for nn = 1:numel(dt)
     mm = mm + 1;
     d(mm) = typecast(freq(nn),'uint32');
     mm = mm + 1;
-    d(mm) = typecast(amp(nn),'uint32');
+    d(mm) = bitshift(typecast(amp(nn,2),'uint32'),12) + typecast(amp(nn,1),'uint32');
     mm = mm + 1;
     d(mm) = typecast(dt(nn),'uint32');
     d(mm) = d(mm) + bitshift(flags(nn),28);
@@ -53,7 +53,7 @@ fprintf(fid,'    %d => X"%08x");\n',numel(d) - 1,d(end));
 
 fprintf(fid,'end DataPackage;\n');
 
-
+fclose(fid);
 
 
 end
