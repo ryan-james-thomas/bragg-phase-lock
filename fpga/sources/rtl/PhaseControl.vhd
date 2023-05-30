@@ -5,6 +5,10 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
+--
+-- This module implemements a PID controller and unwraps the phase signal so that
+-- there aren't phase discontinuities that will screw up the control
+--
 entity PhaseControl is
     port(
         --
@@ -40,7 +44,7 @@ end PhaseControl;
 
 architecture Behavioural of PhaseControl is
 
-component PIController is
+component PIDController is
     port(
         --
         -- Clocking and reset
@@ -68,13 +72,13 @@ component PIController is
     );
 end component;
 
-signal polarity     :   std_logic;
-signal enable       :   std_logic;
-signal hold         :   std_logic;
+signal polarity     :   std_logic;          -- PID polarity
+signal enable       :   std_logic;          -- PID enable
+signal hold         :   std_logic;          -- Sample and hold enable signal
 
-signal phaseNew, phaseOld   :   t_phase;
-signal phaseDiff            :   t_phase;
-signal phaseSum             :   t_phase;
+signal phaseNew, phaseOld   :   t_phase;    -- These are used for detecting phase jumps
+signal phaseDiff            :   t_phase;    -- This is used for measuring the difference between adjacent phase measurements
+signal phaseSum             :   t_phase;    -- This is the reconstructed phase
 constant PHASE_POS_PI       :   t_phase     :=  shift_left(to_signed(1,phaseSum'length),CORDIC_WIDTH - 3);
 
 signal validWrap            :   std_logic;
@@ -96,7 +100,7 @@ hold <= tc_i.flags(1);
 --
 -- Instantiate PID controller
 --
-PI: PIController
+PID: PIDController
 port map(
     clk         =>  clk,
     aresetn     =>  aresetn,

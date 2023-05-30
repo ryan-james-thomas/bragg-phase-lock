@@ -5,6 +5,10 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
+--
+-- This module computes a phase from I/Q demodulation of a single ADC signal
+-- assuming it is at the frequency given by freq_i
+--
 entity PhaseCalculation is
     port(
         clk             :   in  std_logic;          --Master system clock
@@ -22,7 +26,9 @@ entity PhaseCalculation is
 end PhaseCalculation;
 
 architecture Behavioral of PhaseCalculation is
-
+--
+-- This mixing DDS generates both a sin and cos output for I/Q demodulation
+--
 COMPONENT MixingDDS
   PORT (
     aclk : IN STD_LOGIC;
@@ -33,7 +39,9 @@ COMPONENT MixingDDS
     m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- Demodulation requires a mixer
+--
 COMPONENT MultMixer
   PORT (
     CLK : IN STD_LOGIC;
@@ -42,7 +50,10 @@ COMPONENT MultMixer
     P : OUT STD_LOGIC_VECTOR(23 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- Demodulation also requires a low-pass filter.  We use a CIC filter
+-- to reduce the data rate from 125/250 MSPS to something more reasonable
+--
 COMPONENT CIC_Decimate
   PORT (
     aclk : IN STD_LOGIC;
@@ -57,7 +68,10 @@ COMPONENT CIC_Decimate
     m_axis_data_tvalid : OUT STD_LOGIC
   );
 END COMPONENT;
-
+--
+-- This component computes the phase using the I and Q signals
+-- using the CORDIC algorithm
+--
 COMPONENT PhaseCalc
   PORT (
     aclk : IN STD_LOGIC;
@@ -69,7 +83,9 @@ COMPONENT PhaseCalc
     m_axis_dout_tdata : OUT STD_LOGIC_VECTOR(23 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- This is no longer used?
+--
 component BlockMemHandler is
     port(
         clk         :   in  std_logic;
@@ -197,7 +213,7 @@ port map(
 );
 
 --
--- Compute phase via arctan
+-- Compute phase via arctan using the CORDIC algorithm
 --
 validPhase_i <= validQcic and validIcic;
 Iphase_i <= std_logic_vector(resize(shift_right(signed(cicI_o),to_integer(scaleFactor)),Iphase_i'length));

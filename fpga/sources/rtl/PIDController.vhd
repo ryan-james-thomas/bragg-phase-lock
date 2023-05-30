@@ -5,7 +5,10 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
-entity PIController is
+--
+-- This module implements a PID controller with sample-and-hold capability
+--
+entity PIDController is
     port(
         --
         -- Clocking and reset
@@ -31,10 +34,12 @@ entity PIController is
         valid_o     :   out std_logic;
         data_o      :   out t_phase
     );
-end PIController;
+end PIDController;
 
-architecture Behavioral of PIController is
-
+architecture Behavioral of PIDController is
+--
+-- Need three multipliers for a PID controller
+--
 COMPONENT PID_Multipliers
   PORT (
     CLK : IN STD_LOGIC;
@@ -123,7 +128,8 @@ port map(
 --
 pidSum <= signed(prop_o) + signed(int_o) + signed(deriv_o);
 --
--- Main process
+-- Main process.  The PID process is pipelined to maximize the speed at which new outputs
+-- are generated
 --
 PID: process(clk,aresetn) is
 begin

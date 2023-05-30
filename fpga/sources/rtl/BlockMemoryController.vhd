@@ -3,7 +3,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.CustomDataTypes.all;
 
-
+--
+-- This module simplifies writing and reading to a block memory
+--
 entity BlockMemoryController is
     port(
         wrclk       :   in  std_logic;
@@ -19,7 +21,9 @@ entity BlockMemoryController is
 end BlockMemoryController;
 
 architecture Behavioral of BlockMemoryController is
-
+--
+-- The block memory component
+--
 COMPONENT BlockMemDPG
   PORT (
     clka : IN STD_LOGIC;

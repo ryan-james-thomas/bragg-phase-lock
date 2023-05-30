@@ -5,8 +5,8 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 
 --
--- This package contains both constants and functions used for
--- servo control.
+-- This package contains constants, type definitions, functions, and procedures
+-- for parsing AXI signals
 --
 package AXI_Bus_Package is
 

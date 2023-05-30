@@ -5,7 +5,11 @@ library UNISIM;
 use UNISIM.VComponents.all;
 use work.CustomDataTypes.all;
 
-
+--
+-- This module converts the differential signalling of the ADCs into single-ended
+-- signals.  There's a bunch of stuff in here that I don't really understand, as I
+-- copied it from the manufacturer's Verilog design
+--
 entity ADC_Data_Input is
     port(
         --

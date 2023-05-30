@@ -5,6 +5,9 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
+--
+-- This module simplifies dealing with FIFO buffers
+--
 entity FIFOHandler is
     port(
         wr_clk      :   in  std_logic;
@@ -21,7 +24,9 @@ entity FIFOHandler is
 end FIFOHandler;
 
 architecture Behavioral of FIFOHandler is
-
+--
+-- This component is the actual FIFO buffer
+--
 COMPONENT FIFO_Continuous
   PORT (
     rst : IN STD_LOGIC;
@@ -41,7 +46,9 @@ signal rst  :   std_logic;
 begin
 
 rst <= not(aresetn) or bus_m.reset;
-
+--
+-- This process generates a valid signal on the output bus
+--
 ValidDelay: process(rd_clk,aresetn) is
 begin
     if aresetn = '0' then

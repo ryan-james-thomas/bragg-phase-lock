@@ -5,6 +5,12 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
+--
+-- This module implements a timing controller that accepts timing information and data from
+-- a user, and then outputs that data at the correct times when triggered.
+-- Data is stored in a block memory so that it is available on every trigger without needing
+-- to be reloaded.
+--
 entity TimingController is
     port(
         wrclk       :   in  std_logic;
@@ -22,7 +28,9 @@ entity TimingController is
 end TimingController;
 
 architecture rtl of TimingController is
-
+--
+-- FIFO for the timing controller/digital pattern generator (DPG).  This is currently unused
+--
 COMPONENT FIFO_DPG
   PORT (
     clk : IN STD_LOGIC;
@@ -35,7 +43,10 @@ COMPONENT FIFO_DPG
     empty : OUT STD_LOGIC
   );
 END COMPONENT;
-
+--
+-- This component is a controller for a block memory, used for storing the timing controller
+-- instructions.
+--
 COMPONENT BlockMemoryController is
     port(
         wrclk       :   in  std_logic;
@@ -49,32 +60,35 @@ COMPONENT BlockMemoryController is
         bus_o       :   out t_mem_bus_slave_ext
     );
 end COMPONENT;
-
+--
+-- Constants
+--
 constant DPG_POW_WIDTH  :   natural :=  CORDIC_WIDTH;
 constant DPG_FREQ_WIDTH :   natural :=  PHASE_WIDTH;
 constant DPG_AMP_WIDTH  :   natural :=  AMP_MULT_WIDTH;
 constant DPG_TIME_WIDTH :   natural :=  28;
 constant DPG_FLAG_WIDTH :   natural :=  TC_FLAG_WIDTH;
+--
+-- Signal and type definitions
+--
 
+-- This state is used for controlling the output state machine
 type t_state_local is (ready,wait_for_delay,waiting,read_first_address);
 signal state    :   t_state_local;
-
+-- This state is used for controlling the memory writing state machine
 type t_write_state_local is (pow,freq,amp,duration);
-signal mem_data_i       :   t_mem_data_ext;
-signal memCount         :   unsigned(1 downto 0);
 signal memState         :   t_write_state_local;
-signal valid, start     :   std_logic;
 
-signal wrTrig           :   std_logic;
-signal mem_o            :   t_mem_data_ext;
+signal mem_data_i       :   t_mem_data_ext;         --Input memory data
+signal wrTrig           :   std_logic;              --Write trigger for the memory
 
-signal delay            :   unsigned(DPG_TIME_WIDTH - 1 downto 0);
-signal count            :   unsigned(DPG_TIME_WIDTH downto 0);
-signal resetSync, startSync, wrSync        :   std_logic_vector(1 downto 0);
-
+signal delay            :   unsigned(DPG_TIME_WIDTH - 1 downto 0);              --Timing controller delay for current instruction
+signal count            :   unsigned(DPG_TIME_WIDTH downto 0);                  --Counter for the timing controller delay
+signal resetSync, startSync, wrSync        :   std_logic_vector(1 downto 0);    --Synchronization signals for the timing controller
+-- Input/output buses for the block memory
 signal bus_i            :   t_mem_bus_master;
 signal bus_o            :   t_mem_bus_slave_ext;
-
+--Output data from the timing controller
 signal tc_data          :   t_timing_control;
 
 begin
@@ -93,10 +107,9 @@ debug_o(15 downto 4) <= std_logic_vector(resize(bus_o.last,12));
 debug_o(27 downto 16) <= std_logic_vector(resize(bus_i.addr,12));
 debug_o(31 downto 28) <= (others => '0');
 --
--- Generate data words for FIFO input
+-- Generate data words for memory input
 --
---rising_sync(clk,aresetn,valid_i,valid);
-MakeFIFOInputs: process(wrclk,aresetn) is
+MakeMemoryInputs: process(wrclk,aresetn) is
 begin
     if aresetn = '0' then
         mem_data_i <= (others => '0');
@@ -104,11 +117,17 @@ begin
         wrTrig <= '0';
     elsif rising_edge(wrclk) then
         if reset_i = '1' then
+            --
+            -- If a reset signal is received, reset the memory state and the input data
+            --
             wrTrig <= '0';
             memState <= pow;
             mem_data_i <= (others => '0');
         elsif valid_i = '1' then
             MemCase: case memState is
+                --
+                -- This state machine cycles through writing phase, frequency, amplitude, and duration data to the memory as a single data word
+                --
                 when pow =>
                     mem_data_i(DPG_POW_WIDTH - 1 downto 0) <= std_logic_vector(resize(signed(data_i),DPG_POW_WIDTH));
                     memState <= freq;
@@ -135,7 +154,6 @@ end process;
 -- Instantiate memory controller.  Reset signal is
 -- routed directly to the bus reset signal
 --
---bus_i.reset <= reset_i;
 DPG_Storage: BlockMemoryController
 port map(
     wrclk       =>  wrclk,
@@ -167,10 +185,6 @@ begin
         state <= ready;
         data_o <= INIT_TIMING_CONTROL;
         bus_i <= INIT_MEM_BUS_MASTER;
---        bus_i.addr <= (others => '0');
---        bus_i.trig <= '0';
---        bus_i.status <= idle;
---        bus_i.data <= (others => '0');
         count <= (others => '0');
     elsif rising_edge(rdclk) then
         if reset_i = '1' then

@@ -5,6 +5,10 @@ use ieee.std_logic_unsigned.all;
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
+--
+-- This module generates two sinusoidal signals with different frequencies and amplitudes and with
+-- a programmable phase difference between them
+--
 entity DualChannelDDS is
     port(
         clk             :   in  std_logic;
@@ -21,7 +25,10 @@ entity DualChannelDDS is
 end DualChannelDDS;
 
 architecture Behavioral of DualChannelDDS is
-
+--
+-- This component generates a sinusoidal signal with a stream-able phase
+-- This means that the phase can be updated very fast
+--
 COMPONENT FreqPhaseStreamDDS
   PORT (
     aclk : IN STD_LOGIC;
@@ -32,7 +39,11 @@ COMPONENT FreqPhaseStreamDDS
     m_axis_data_tdata : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- For interferometry we only need to control the relative phase,
+-- so to save "space" on the FPGA we only have a frequency streaming
+-- version for the second DDS
+--
 COMPONENT FreqStreamDDS
   PORT (
     aclk : IN STD_LOGIC;
@@ -43,7 +54,10 @@ COMPONENT FreqStreamDDS
     m_axis_data_tdata : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- For amplitude control we need to multiply the DDS output
+-- with a scale factor
+--
 COMPONENT OutputMultiplier
   PORT (
     CLK : IN STD_LOGIC;
@@ -52,7 +66,9 @@ COMPONENT OutputMultiplier
     P : OUT STD_LOGIC_VECTOR(21 DOWNTO 0)
   );
 END COMPONENT;
-
+--
+-- Various signals
+--
 signal dds1_phase_slv   :   std_logic_vector(63 downto 0);
 signal dds1_tdata       :   std_logic_vector(15 downto 0);
 signal dds1_tvalid      :   std_logic;

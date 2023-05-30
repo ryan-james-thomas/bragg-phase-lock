@@ -6,7 +6,7 @@ use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
 
 --
--- Example top-level module for parsing simple AXI instructions
+-- Top-level module
 --
 entity topmod is
     port (
@@ -52,7 +52,10 @@ end topmod;
 
 
 architecture Behavioural of topmod is
-
+--
+-- This component generates two sinusoidal signals at different frequencies
+-- and with relative phase.  Amplitudes are controllable as well
+--
 component DualChannelDDS is
     port(
         clk             :   in  std_logic;
@@ -67,7 +70,9 @@ component DualChannelDDS is
         dac_o           :   out t_dac_array
     );       
 end component;
-
+--
+-- This component computs the phase of an input signal at the given frequency
+--
 component PhaseCalculation is
     port(
         clk             :   in  std_logic;          --Master system clock
@@ -83,7 +88,9 @@ component PhaseCalculation is
         valid_o         :   out std_logic           --Output phase valid signal
     );
 end component;
-
+--
+-- This component implements a PID controller to control a phase
+--
 component PhaseControl is
     port(
         --
@@ -116,7 +123,9 @@ component PhaseControl is
         valid_o     :   out std_logic
     );
 end component;
-
+--
+-- FIFO (First-in-first-out) buffers are used for data storage.
+--
 component FIFOHandler is
     port(
         wr_clk      :   in  std_logic;
@@ -131,7 +140,9 @@ component FIFOHandler is
         bus_s       :   out t_fifo_bus_slave
     );
 end component;
-
+--
+-- The timing controller allows for dynamic changes to the DDS amplitude, frequency, and phase
+--
 component TimingController is
     port(
         wrclk       :   in  std_logic;
@@ -147,7 +158,9 @@ component TimingController is
         data_o      :   out t_timing_control
     );
 end component;
-
+--
+-- This component saves ADC data into a block memory
+--
 component SaveADCData is
     port(
         readClk     :   in  std_logic;          --Clock for reading data
@@ -235,7 +248,6 @@ signal debugCount   :   unsigned(7 downto 0);
 
 signal resetExtended:   std_logic;
 signal resetCount   :   unsigned(7 downto 0);
-
 --
 -- Timing controller signals
 --
@@ -249,37 +261,38 @@ signal debug_o      :   std_logic_vector(31 downto 0);
 
 begin
 --
--- PLL outputs
+-- PLL outputs.  In principle these can be used with an external clock signal to lock the 
+-- on-board clock.  Currently they are just set to their default
 --
 pll_hi_o <= '0';
 pll_lo_o <= '1';
-
 --
 -- Parse top register and triggers
 --
-dfshift <= unsigned(topReg(3 downto 0));    --Integer shift right for demodulation frequency
-useSetDemod <= topReg(4);                   --Use a set demodulation frequency '1' or a shifted one '0'
-useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
-useTCDemod <= topReg(6);                    --Use TC df output as FTW1 and demod frequency inputs
-disableExtTrig <= topReg(7);
-ampSet(0) <= unsigned(topReg(19 downto 8));
-ampSet(1) <= unsigned(topReg(31 downto 20));
+dfshift <= unsigned(topReg(3 downto 0));        --Integer shift right for demodulation frequency
+useSetDemod <= topReg(4);                       --Use a set demodulation frequency '1' or a shifted one '0'
+useManual <= topReg(5);                         --Use manual frequencies and phases '1' or timing controller based ones '0'
+useTCDemod <= topReg(6);                        --Use TC df output as FTW1 and demod frequency inputs
+disableExtTrig <= topReg(7);                    --Disables the external trigger
+ampSet(0) <= unsigned(topReg(19 downto 8));     --Manual amplitude control for output 1
+ampSet(1) <= unsigned(topReg(31 downto 20));    --Manual amplitude control for output 2
 
-regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
-tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));      --Start the timing controller
-ext_o(0) <= trig_i;
+regPhaseValid <= triggers(0);                                           --Indicates that a new CIC filter rate is valid
+tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));        --Start the timing controller
+ext_o(0) <= trig_i;                                                     --Echoes the input trigger
 --triggers(2) is used in the extended FIFO reset
 --tcReset <= triggers(3);                     --Resets the timing controller FIFO
 
 --
--- DDS output signals.  dfSet is the static frequency difference set by the user
+-- DDS output signals.  dfSet is the static frequency difference set by the user.
 -- pow1 and ftw1 are connected to OUT1 on the board as the least-significant 16 bits
 -- ftw2 is connected to OUT2 on the board as the most-significant 16 bits
 --
-df <= dfSet when useManual = '1' else tc_o.df;  --Use dfSet when manual (set in parse process) or timing controller value
-ftw1 <= f0 + df when useManual = '1' or useTCDemod = '0' else tc_o.df;
-ftw2 <= f0 - df when useManual = '1' or useTCDemod = '0' else tc_o.df;
-amp_i <= ampSet when useManual = '1' else tc_o.amp;
+df <= dfSet when useManual = '1' else tc_o.df;                              --Use dfSet when manual (set in parse process) or timing controller value
+ftw1 <= f0 + df when useManual = '1' or useTCDemod = '0' else tc_o.df;      --Fixed output frequency when using manual mode of disabling the TC demodulation freq, dynamic frequency otherwise
+ftw2 <= f0 - df when useManual = '1' or useTCDemod = '0' else tc_o.df;      --Fixed output frequency when using manual mode of disabling the TC demodulation freq, dynamic frequency otherwise
+amp_i <= ampSet when useManual = '1' else tc_o.amp;                         --Output amplitudes
+-- Instantiate the Dual Channel DDS
 DDS_2Channel: DualChannelDDS
 port map(
     clk             =>  adcclk(1),
@@ -290,7 +303,9 @@ port map(
     amp_i           =>  amp_i,
     dac_o           =>  dac
 );
-
+--
+-- This is needed for proper output signalling.  Why? I don't actually know: I copied it from the manufacturer's design
+--
 DAC_Output_Proc: process(adcclk(1),aresetn) is
 begin
     if aresetn = '0' then
@@ -301,11 +316,10 @@ begin
         dac_b_o <= not(std_logic_vector(dac(1)));
     end if;
 end process;    
-
 --
 -- Phase calculation
 --
-adc <= resize(signed(adc_dat_b_i),adc'length);
+adc <= resize(signed(adc_dat_b_i),adc'length);  --Just resizes raw data
 --
 -- Demodulation frequency is either a shifted version of the one used for freq generation
 -- or it's a fixed one set by the user. The fixed one is allowed only for manual control
@@ -324,12 +338,11 @@ port map(
     phase_o     =>  phase,
     valid_o     =>  phaseValid
 );
-
 --
 -- Phase control
 -- Phase as calculated from PhaseCalc is passed to this module.  The control signal is either the manually supplied
 -- signal or the one from the TimingController.  The output phase is connected to the input of the 2-channel DDS
--- module.  When the PI loop inside MainPhaseControl is disabled, the output phase that is connected to the 2-channel
+-- module.  When the PID loop inside MainPhaseControl is disabled, the output phase that is connected to the 2-channel
 -- DDS module is fixed at 0.  
 --
 phase_c <= phaseControlSig when useManual = '1' else tc_o.pow;
@@ -352,7 +365,7 @@ port map(
 -- FIFO buffering for long data sets
 --
 --
--- Extends FIFO reset signals
+-- Extends FIFO reset signals.  I believe this is needed because the FIFOs operate on two different clocks
 --
 ResetExtend: process(sysclk(0),aresetn) is
 begin
@@ -378,7 +391,7 @@ begin
 end process;
 --
 -- Generate FIFO buffers. We save the measured phase, the phase unwrapped phase relative to the phase
--- when the PI controller is enabled, and the output phase generated by the PI controller (which is
+-- when the PI controller is enabled, and the output phase generated by the PID controller (which is
 -- connected directly to the 2-channel DDS module to control the OUT1 phase).
 --
 enableFIFO <= fifoReg(0) or tc_o.enable;
@@ -448,17 +461,17 @@ begin
         comState <= idle;
         bus_s <= INIT_AXI_BUS_SLAVE;
         triggers <= (others => '0');
-        f0 <= to_unsigned(37580964,f0'length);      --35 MHz
-        dfSet <= to_unsigned(134218,dfSet'length);     -- 0.125 MHz
-        dfmod <= to_unsigned(1073744,dfmod'length); -- 1 MHz
-        phaseControlSig <= to_signed(0,phaseControlSig'length);
-        regPhaseCalc <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
-        regPhaseControl <= X"000000" & X"08";
-        regControlGains <= (others => '0');
-        phaseControlSig <= (others => '0');
-        topReg <= (others => '0');
-        fifoReg <= (others => '0');
-        numSamples <= to_unsigned(1000,numSamples'length);
+        f0 <= to_unsigned(37580964,f0'length);                  -- 35 MHz center frequency
+        dfSet <= to_unsigned(134218,dfSet'length);              -- 0.125 MHz frequency difference
+        dfmod <= to_unsigned(1073744,dfmod'length);             -- 1 MHz
+        phaseControlSig <= to_signed(0,phaseControlSig'length); -- 0  degree phase difference
+        regPhaseCalc <= X"00000a08";                            -- CIC filter decimation rate of 2^8 = 256
+        regPhaseControl <= X"000000" & X"08";                   -- I don't know why I set the default to end in X"08". Doesn't appear necessary anymore
+        regControlGains <= (others => '0');                     -- PID gains set to 0
+        phaseControlSig <= (others => '0');                     -- Phase control signal is 0
+        topReg <= (others => '0');                              -- Default top-level register
+        fifoReg <= (others => '0');                             -- FIFO register
+        numSamples <= to_unsigned(1000,numSamples'length);      --Number of ADC samples to save
         
         fifo_bus(0).m.status <= idle;
         fifo_bus(1).m.status <= idle;
@@ -471,6 +484,9 @@ begin
     elsif rising_edge(sysclk(0)) then
         FSM: case(comState) is
             when idle =>
+                --
+                -- Idle state waits for new valid data on the bus
+                --
                 triggers <= (others => '0');
                 bus_s.resp <= "00";
                 if bus_m.valid(0) = '1' then
@@ -508,7 +524,9 @@ begin
                             comState <= finishing;
                             tcData <= resize(bus_m.data,tcData'length);
                             tcValid <= '1';
-                        
+                        --
+                        -- Change number of ADC samples to save
+                        --
                         when X"000038" => rw(bus_m,bus_s,comState,numSamples);
                         
                         when others => 

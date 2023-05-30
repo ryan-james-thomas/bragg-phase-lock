@@ -44,7 +44,7 @@
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/BlockMemoryController.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/DualChannelDDS.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/FIFOHandler.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PIController.vhd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PIDController.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseCalculation.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseControl.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/TimingController.vhd"
@@ -92,7 +92,7 @@ proc checkRequiredFiles { origin_dir} {
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/BlockMemoryController.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/DualChannelDDS.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/FIFOHandler.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/rtl/PIController.vhd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/rtl/PIDController.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseCalculation.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseControl.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/TimingController.vhd" \
@@ -307,7 +307,7 @@ set files [list \
  [file normalize "${origin_dir}/sources/rtl/BlockMemoryController.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/DualChannelDDS.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/FIFOHandler.vhd"] \
- [file normalize "${origin_dir}/sources/rtl/PIController.vhd"] \
+ [file normalize "${origin_dir}/sources/rtl/PIDController.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/PhaseCalculation.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/PhaseControl.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/TimingController.vhd"] \
@@ -576,7 +576,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/rtl/PIController.vhd"
+set file "$origin_dir/sources/rtl/PIDController.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
