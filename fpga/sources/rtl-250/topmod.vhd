@@ -130,7 +130,6 @@ component FIFOHandler is
     port(
         wr_clk      :   in  std_logic;
         rd_clk      :   in  std_logic;
---        clk         :   in  std_logic;
         aresetn     :   in  std_logic;
         
         data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
@@ -185,23 +184,23 @@ signal comState :   t_status            :=  idle;
 signal bus_m    :   t_axi_bus_master    :=  INIT_AXI_BUS_MASTER;
 signal bus_s    :   t_axi_bus_slave     :=  INIT_AXI_BUS_SLAVE;
 signal triggers :   t_param_reg         :=  (others => '0');
-
+signal topReg   :   t_param_reg;
 --
 -- DDS parameters
 --
-signal f0, df,dfmod :   t_dds_phase     :=  (others => '0');
-signal dfSet        :   t_dds_phase     :=  (others => '0');
-signal dfmodManual  :   t_dds_phase     :=  (others => '0');
-signal dfmod_i      :   t_dds_phase     :=  (others => '0');
-signal pow          :   t_dds_phase     :=  (others => '0');
-signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
-signal amp_i, ampSet:   t_amp_array;
-signal useSetDemod  :   std_logic;
-signal dfshift      :   unsigned(3 downto 0);
-signal useManual    :   std_logic;
-signal useTCDemod   :   std_logic;
+signal f0, df,dfmod     :   t_dds_phase     :=  (others => '0');
+signal dfSet            :   t_dds_phase     :=  (others => '0');
+signal dfmodManual      :   t_dds_phase     :=  (others => '0');
+signal dfmod_i          :   t_dds_phase     :=  (others => '0');
+signal pow              :   t_dds_phase     :=  (others => '0');
+signal ftw1, ftw2       :   t_dds_phase     :=  (others => '0');
+signal amp_i, ampSet    :   t_amp_array;
+signal useSetDemod      :   std_logic;
+signal dfshift          :   unsigned(3 downto 0);
+signal useManual        :   std_logic;
+signal useTCDemod       :   std_logic;
 signal disableExtTrig   :   std_logic;
-signal dac          :   t_dac_array;
+signal dac              :   t_dac_array;
 
 --
 -- Phase calculation signals
@@ -227,7 +226,6 @@ signal phaseSum         :   t_phase;
 --
 -- Block memory signals
 --
-signal topReg           :   t_param_reg;
 signal memData_i        :   t_mem_data;
 signal memDataValid_i   :   std_logic;
 signal mem_bus          :   t_mem_bus;
@@ -280,8 +278,6 @@ ampSet(1) <= unsigned(topReg(31 downto 20));    --Manual amplitude control for o
 regPhaseValid <= triggers(0);                                           --Indicates that a new CIC filter rate is valid
 tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));        --Start the timing controller
 ext_o(0) <= trig_i;                                                     --Echoes the input trigger
---triggers(2) is used in the extended FIFO reset
---tcReset <= triggers(3);                     --Resets the timing controller FIFO
 
 --
 -- DDS output signals.  dfSet is the static frequency difference set by the user.

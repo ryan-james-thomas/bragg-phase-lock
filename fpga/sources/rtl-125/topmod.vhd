@@ -4,36 +4,59 @@ use ieee.numeric_std.ALL;
 use ieee.std_logic_unsigned.all; 
 use work.CustomDataTypes.all;
 use work.AXI_Bus_Package.all;
- 
+
+--
+-- Top level module
+--
 entity topmod is
     port (
+        --
+        -- Clocks and reset
+        --
         sysclk          :   in  std_logic;
         adcclk          :   in  std_logic;
         aresetn         :   in  std_logic;
- 
+        --
+        -- AXI-super-lite signals
+        --
         addr_i          :   in  unsigned(AXI_ADDR_WIDTH-1 downto 0);            --Address out
         writeData_i     :   in  std_logic_vector(AXI_DATA_WIDTH-1 downto 0);    --Data to write
         dataValid_i     :   in  std_logic_vector(1 downto 0);                   --Data valid out signal
         readData_o      :   out std_logic_vector(AXI_DATA_WIDTH-1 downto 0);    --Data to read
         resp_o          :   out std_logic_vector(1 downto 0);                   --Response in
-        
+        --
+        -- External I/O
+        --
+        ext_i           :   in  std_logic_vector(7 downto 0);
+        ext_o           :   out std_logic_vector(7 downto 0);
+        --
+        -- DAC data
+        --
         m_axis_tdata    :   out std_logic_vector(31 downto 0);
         m_axis_tvalid   :   out std_logic;
-        
+        --
+        -- ADC data
+        --
         adcData_i       :   in  std_logic_vector(31 downto 0)
     );
 end topmod;
  
  
 architecture Behavioural of topmod is
-
+--
+-- This is a bunch of weird Vivado stuff that I copied to make the design work
+-- I'm not entirely sure what it does...
+--
 ATTRIBUTE X_INTERFACE_INFO : STRING;
 ATTRIBUTE X_INTERFACE_INFO of m_axis_tdata: SIGNAL is "xilinx.com:interface:axis:1.0 m_axis TDATA";
 ATTRIBUTE X_INTERFACE_INFO of m_axis_tvalid: SIGNAL is "xilinx.com:interface:axis:1.0 m_axis TVALID";
 ATTRIBUTE X_INTERFACE_PARAMETER : STRING;
 ATTRIBUTE X_INTERFACE_PARAMETER of m_axis_tdata: SIGNAL is "CLK_DOMAIN system_processing_system7_0_0_FCLK_CLK0,FREQ_HZ 125000000";
 ATTRIBUTE X_INTERFACE_PARAMETER of m_axis_tvalid: SIGNAL is "CLK_DOMAIN system_processing_system7_0_0_FCLK_CLK0,FREQ_HZ 125000000";
-
+--
+-- This component generates two sinusoidal signals at different frequencies
+-- and with relative phase.  Amplitudes are controllable as well
+--
 component DualChannelDDS is
     port(
         clk             :   in  std_logic;
@@ -43,13 +66,14 @@ component DualChannelDDS is
         ftw1            :   in  t_dds_phase;
         ftw2            :   in  t_dds_phase;
         
-        amp_i           :   in  t_amp_mult;
+        amp_i           :   in  t_amp_array;
         
-        m_axis_tdata    :   out std_logic_vector(31 downto 0);
-        m_axis_tvalid   :   out std_logic
-    );     
+        dac_o           :   out t_dac_array
+    );       
 end component;
-
+--
+-- This component computs the phase of an input signal at the given frequency
+--
 component PhaseCalculation is
     port(
         clk             :   in  std_logic;          --Master system clock
@@ -65,7 +89,9 @@ component PhaseCalculation is
         valid_o         :   out std_logic           --Output phase valid signal
     );
 end component;
-
+--
+-- This component implements a PID controller to control a phase
+--
 component PhaseControl is
     port(
         --
@@ -98,12 +124,13 @@ component PhaseControl is
         valid_o     :   out std_logic
     );
 end component;
-
+--
+-- FIFO (First-in-first-out) buffers are used for data storage.
+--
 component FIFOHandler is
     port(
         wr_clk      :   in  std_logic;
         rd_clk      :   in  std_logic;
---        clk         :   in  std_logic;
         aresetn     :   in  std_logic;
         
         data_i      :   in  std_logic_vector(FIFO_WIDTH-1 downto 0);
@@ -113,7 +140,9 @@ component FIFOHandler is
         bus_s       :   out t_fifo_bus_slave
     );
 end component;
-
+--
+-- The timing controller allows for dynamic changes to the DDS amplitude, frequency, and phase
+--
 component TimingController is
     port(
         clk         :   in  std_logic;
@@ -136,21 +165,24 @@ signal comState :   t_status            :=  idle;
 signal bus_m    :   t_axi_bus_master    :=  INIT_AXI_BUS_MASTER;
 signal bus_s    :   t_axi_bus_slave     :=  INIT_AXI_BUS_SLAVE;
 signal triggers :   t_param_reg         :=  (others => '0');
+signal topReg   :   t_param_reg;
 
 --
 -- DDS parameters
 --
-signal f0, df,dfmod :   t_dds_phase     :=  (others => '0');
-signal dfSet        :   t_dds_phase     :=  (others => '0');
-signal dfmodManual  :   t_dds_phase     :=  (others => '0');
-signal dfmod_i      :   t_dds_phase     :=  (others => '0');
-signal pow          :   t_dds_phase     :=  (others => '0');
-signal ftw1, ftw2   :   t_dds_phase     :=  (others => '0');
-signal amp_i, ampSet:   t_amp_mult;
-signal useSetDemod  :   std_logic;
-signal dfshift      :   unsigned(3 downto 0);
-signal useManual    :   std_logic;
-signal useTCDemod   :   std_logic;
+signal f0, df,dfmod     :   t_dds_phase     :=  (others => '0');
+signal dfSet            :   t_dds_phase     :=  (others => '0');
+signal dfmodManual      :   t_dds_phase     :=  (others => '0');
+signal dfmod_i          :   t_dds_phase     :=  (others => '0');
+signal pow              :   t_dds_phase     :=  (others => '0');
+signal ftw1, ftw2       :   t_dds_phase     :=  (others => '0');
+signal amp_i, ampSet    :   t_amp_array;
+signal useSetDemod      :   std_logic;
+signal dfshift          :   unsigned(3 downto 0);
+signal useManual        :   std_logic;
+signal useTCDemod       :   std_logic;
+signal disableExtTrig   :   std_logic;
+signal dac              :   t_dac_array;
 
 --
 -- Phase calculation signals
@@ -173,14 +205,6 @@ signal powControl       :   t_dds_phase;
 signal powControlValid  :   std_logic;
 signal actPhase         :   unsigned(CORDIC_WIDTH-1 downto 0);
 signal phaseSum         :   t_phase;
---
--- Block memory signals
---
-signal topReg       :   t_param_reg;
-signal mem_bus      :   t_mem_bus   :=  INIT_MEM_BUS;
-signal memSwitch    :   std_logic_vector(3 downto 0);
-signal memData_i    :   std_logic_vector(15 downto 0);
-signal memValid_i   :   std_logic;
 
 --
 -- FIFO signals
@@ -212,16 +236,17 @@ begin
 --
 -- Parse top register and triggers
 --
-dfshift <= unsigned(topReg(3 downto 0));    --Integer shift right for demodulation frequency
-useSetDemod <= topReg(4);                   --Use a set demodulation frequency '1' or a shifted one '0'
-useManual <= topReg(5);                     --Use manual frequencies and phases '1' or timing controller based ones '0'
-useTCDemod <= topReg(6);                    --Use TC df output as FTW1 and demod frequency inputs
-ampSet <= unsigned(topReg(31 downto 32 - ampSet'length));
+dfshift <= unsigned(topReg(3 downto 0));        --Integer shift right for demodulation frequency
+useSetDemod <= topReg(4);                       --Use a set demodulation frequency '1' or a shifted one '0'
+useManual <= topReg(5);                         --Use manual frequencies and phases '1' or timing controller based ones '0'
+useTCDemod <= topReg(6);                        --Use TC df output as FTW1 and demod frequency inputs
+disableExtTrig <= topReg(7);                    --Disables the external trigger
+ampSet(0) <= unsigned(topReg(19 downto 8));     --Manual amplitude control for output 1
+ampSet(1) <= unsigned(topReg(31 downto 20));    --Manual amplitude control for output 2
 
-regPhaseValid <= triggers(0);               --Indicates that a new CIC filter rate is valid
-tcStart <= triggers(1);                     --Start the timing controller
---triggers(2) is used in the extended FIFO reset
---tcReset <= triggers(3);                     --Resets the timing controller FIFO
+regPhaseValid <= triggers(0);                                           --Indicates that a new CIC filter rate is valid
+tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));        --Start the timing controller
+ext_o(0) <= trig_i;                                                     --Echoes the input trigger
 
 --
 -- DDS output signals.  dfSet is the static frequency difference set by the user
@@ -240,9 +265,11 @@ port map(
     ftw1            =>  ftw1,
     ftw2            =>  ftw2,
     amp_i           =>  amp_i,
-    m_axis_tvalid   =>  m_axis_tvalid,
-    m_axis_tdata    =>  m_axis_tdata
+    dac_o           =>  dac
 );
+m_axis_tvalid <= '1';
+m_axis_tdata <= std_logic_vector(resize(dac(1),16)) & std_logic_vector(resize(dac(0),16));
+
 --
 -- Phase calculation
 --
@@ -265,7 +292,6 @@ port map(
     phase_o     =>  phase,
     valid_o     =>  phaseValid
 );
-
 --
 -- Phase control
 -- Phase as calculated from PhaseCalc is passed to this module.  The control signal is either the manually supplied
@@ -334,7 +360,6 @@ FIFO_GEN: for I in 0 to NUM_FIFOS-1 generate
     port map(
         wr_clk      =>  adcclk,
         rd_clk      =>  sysclk,
---        clk         =>  adcclk,
         aresetn     =>  aresetn,
         data_i      =>  fifoData(I),
         valid_i     =>  fifoValid(I),
@@ -357,7 +382,6 @@ port map(
     data_o      =>  tc_o,
     debug_o     =>  debug_o
 );
-
 --
 -- Parse AXI data
 -- 
@@ -372,16 +396,16 @@ begin
         comState <= idle;
         bus_s <= INIT_AXI_BUS_SLAVE;
         triggers <= (others => '0');
-        f0 <= to_unsigned(37580964,f0'length);      --35 MHz
-        dfSet <= to_unsigned(134218,dfSet'length);     -- 0.125 MHz
-        dfmod <= to_unsigned(1073744,dfmod'length); -- 1 MHz
-        phaseControlSig <= to_signed(0,phaseControlSig'length);
-        regPhaseCalc <= X"00000a08";                --CIC filter decimation rate of 2^8 = 256
-        regPhaseControl <= X"000000" & X"08";
-        regControlGains <= (others => '0');
-        phaseControlSig <= (others => '0');
-        topReg <= (others => '0');
-        fifoReg <= (others => '0');
+        f0 <= to_unsigned(37580964,f0'length);                  -- 35 MHz center frequency
+        dfSet <= to_unsigned(134218,dfSet'length);              -- 0.125 MHz frequency difference
+        dfmod <= to_unsigned(1073744,dfmod'length);             -- 1 MHz
+        phaseControlSig <= to_signed(0,phaseControlSig'length); -- 0  degree phase difference
+        regPhaseCalc <= X"00000a08";                            -- CIC filter decimation rate of 2^8 = 256
+        regPhaseControl <= X"000000" & X"08";                   -- I don't know why I set the default to end in X"08". Doesn't appear necessary anymore
+        regControlGains <= (others => '0');                     -- PID gains set to 0
+        phaseControlSig <= (others => '0');                     -- Phase control signal is 0
+        topReg <= (others => '0');                              -- Default top-level register
+        fifoReg <= (others => '0');                             -- FIFO register
         
         fifo_bus(0).m.status <= idle;
         fifo_bus(1).m.status <= idle;
@@ -443,11 +467,12 @@ begin
                             when X"000000" => readOnly(bus_m,bus_s,comState,df);
                             when X"000004" => readOnly(bus_m,bus_s,comState,dfmod_i);
                             when X"000008" => readOnly(bus_m,bus_s,comState,tc_o.df);
-                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp);
-                            when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.pow);
-                            when X"000014" => readOnly(bus_m,bus_s,comState,tc_o.flags);
-                            when X"000018" => readOnly(bus_m,bus_s,comState,phase_c);
-                            when X"00001C" => readOnly(bus_m,bus_s,comState,debug_o);
+                            when X"00000C" => readOnly(bus_m,bus_s,comState,tc_o.amp(0));
+                            when X"000010" => readOnly(bus_m,bus_s,comState,tc_o.amp(1));
+                            when X"000014" => readOnly(bus_m,bus_s,comState,tc_o.pow);
+                            when X"000018" => readOnly(bus_m,bus_s,comState,tc_o.flags);
+                            when X"00001C" => readOnly(bus_m,bus_s,comState,phase_c);
+                            when X"000020" => readOnly(bus_m,bus_s,comState,debug_o);
                             when others => 
                                 comState <= finishing;
                                 bus_s.resp <= "11";
@@ -456,8 +481,26 @@ begin
                     --
                     -- Read phase data
                     --
---                    when X"02" => memRead(bus_m,bus_s,comState,mem_bus.m,mem_bus.s); 
-                        
+                    when X"02" =>
+                        if bus_m.valid(1) = '0' then
+                            bus_s.resp <= "11";
+                            comState <= finishing;
+                            mem_bus.m.trig <= '0';
+                            mem_bus.m.status <= idle;
+                        elsif mem_bus.s.valid = '1' then
+                            bus_s.data <= mem_bus.s.data;
+                            comState <= finishing;
+                            bus_s.resp <= "01";
+                            mem_bus.m.status <= idle;
+                            mem_bus.m.trig <= '0';
+                        elsif mem_bus.s.status = idle then
+                            mem_bus.m.addr <= bus_m.addr(MEM_ADDR_WIDTH + 1 downto 2);
+                            mem_bus.m.status <= waiting;
+                            mem_bus.m.trig <= '1';
+                         else
+                            mem_bus.m.trig <= '0';
+                        end if;
+                    
                     when others => 
                         comState <= finishing;
                         bus_s.resp <= "11";             

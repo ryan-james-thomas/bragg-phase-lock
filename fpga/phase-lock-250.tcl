@@ -29,17 +29,17 @@
 #
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/AXI_Parse.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/CustomDataTypes.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/rtl/ADC_Data_Input.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/FIFO_Continuous/FIFO_Continuous.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/BlockMemDPG/BlockMemDPG.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/PID_Multipliers/PID_Multipliers.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/PhaseCalc/PhaseCalc.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/CIC_Decimate/CIC_Decimate.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/MultMixer/MultMixer.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/MixingDDS/MixingDDS.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/OutputMultiplier/OutputMultiplier.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/FreqStreamDDS/FreqStreamDDS.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/rtl-250/ADC_Data_Input.vhd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FIFO_Continuous/FIFO_Continuous.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/BlockMemDPG/BlockMemDPG.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/PID_Multipliers/PID_Multipliers.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/PhaseCalc/PhaseCalc.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/CIC_Decimate/CIC_Decimate.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MultMixer/MultMixer.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MixingDDS/MixingDDS.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/OutputMultiplier/OutputMultiplier.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FreqStreamDDS/FreqStreamDDS.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/AXI_Bus_Package.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/BlockMemoryController.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/DualChannelDDS.vhd"
@@ -48,16 +48,16 @@
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseCalculation.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseControl.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/TimingController.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/rtl/topmod.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/system/system.bd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/system/system_wrapper.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/MultFilter/MultFilter.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"
-#    "/home/ryan/projects/phase-lock/fpga/sources/ip/BlockMem/BlockMem.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/rtl-250/topmod.vhd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/system-250/system.bd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/system-250/system_wrapper.vhd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MultFilter/MultFilter.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"
+#    "/home/ryan/projects/phase-lock/fpga/sources/ip-250/BlockMem/BlockMem.xci"
 #    "/home/ryan/projects/phase-lock/fpga/sources/rtl/SaveADCData.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/cfg/signal_lab.xdc"
 #    "/home/ryan/projects/phase-lock/fpga/sources/sim/AXI_Tester.vhd"
-#    "/home/ryan/projects/phase-lock/fpga/sources/sim/topmod_tb.vhd"
+#    "/home/ryan/projects/phase-lock/fpga/sources/sim/topmod_250_tb.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/sim/PhaseControl_tb.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/sim/CIC_tb.vhd"
 #    "/home/ryan/projects/phase-lock/fpga/sources/sim/PIController_tb.vhd"
@@ -77,17 +77,17 @@ proc checkRequiredFiles { origin_dir} {
   set files [list \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/AXI_Parse.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/CustomDataTypes.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/rtl/ADC_Data_Input.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/FIFO_Continuous/FIFO_Continuous.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/BlockMemDPG/BlockMemDPG.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/PID_Multipliers/PID_Multipliers.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/PhaseCalc/PhaseCalc.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/CIC_Decimate/CIC_Decimate.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/MultMixer/MultMixer.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/MixingDDS/MixingDDS.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/OutputMultiplier/OutputMultiplier.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/FreqStreamDDS/FreqStreamDDS.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/rtl-250/ADC_Data_Input.vhd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FIFO_Continuous/FIFO_Continuous.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/BlockMemDPG/BlockMemDPG.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/PID_Multipliers/PID_Multipliers.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/PhaseCalc/PhaseCalc.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/CIC_Decimate/CIC_Decimate.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MultMixer/MultMixer.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MixingDDS/MixingDDS.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/OutputMultiplier/OutputMultiplier.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FreqStreamDDS/FreqStreamDDS.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/AXI_Bus_Package.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/BlockMemoryController.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/DualChannelDDS.vhd" \
@@ -96,16 +96,16 @@ proc checkRequiredFiles { origin_dir} {
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseCalculation.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/PhaseControl.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/TimingController.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/rtl/topmod.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/system/system.bd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/system/system_wrapper.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/MultFilter/MultFilter.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci" \
-   "/home/ryan/projects/phase-lock/fpga/sources/ip/BlockMem/BlockMem.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/rtl-250/topmod.vhd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/system-250/system.bd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/system-250/system_wrapper.vhd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MultFilter/MultFilter.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci" \
+   "/home/ryan/projects/phase-lock/fpga/sources/ip-250/BlockMem/BlockMem.xci" \
    "/home/ryan/projects/phase-lock/fpga/sources/rtl/SaveADCData.vhd" \
    "/home/ryan/projects/phase-lock/fpga/cfg/signal_lab.xdc" \
    "/home/ryan/projects/phase-lock/fpga/sources/sim/AXI_Tester.vhd" \
-   "/home/ryan/projects/phase-lock/fpga/sources/sim/topmod_tb.vhd" \
+   "/home/ryan/projects/phase-lock/fpga/sources/sim/topmod_250_tb.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/sim/PhaseControl_tb.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/sim/CIC_tb.vhd" \
    "/home/ryan/projects/phase-lock/fpga/sources/sim/PIController_tb.vhd" \
@@ -135,7 +135,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "phase-lock"
+set _xil_proj_name_ "phase-lock-250"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -143,7 +143,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "phase-lock.tcl"
+set script_file "phase-lock-250.tcl"
 
 # Help information for this script
 proc print_help {} {
@@ -191,7 +191,7 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/phase-lock"]"
+set orig_proj_dir "[file normalize "$origin_dir/phase-lock-250"]"
 
 # Check for paths and files needed for project creation
 set validate_required 0
@@ -292,17 +292,17 @@ set obj [get_filesets sources_1]
 set files [list \
  [file normalize "${origin_dir}/sources/rtl/AXI_Parse.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/CustomDataTypes.vhd"] \
- [file normalize "${origin_dir}/sources/rtl/ADC_Data_Input.vhd"] \
- [file normalize "${origin_dir}/sources/ip/FIFO_Continuous/FIFO_Continuous.xci"] \
- [file normalize "${origin_dir}/sources/ip/BlockMemDPG/BlockMemDPG.xci"] \
- [file normalize "${origin_dir}/sources/ip/PID_Multipliers/PID_Multipliers.xci"] \
- [file normalize "${origin_dir}/sources/ip/PhaseCalc/PhaseCalc.xci"] \
- [file normalize "${origin_dir}/sources/ip/CIC_Decimate/CIC_Decimate.xci"] \
- [file normalize "${origin_dir}/sources/ip/MultMixer/MultMixer.xci"] \
- [file normalize "${origin_dir}/sources/ip/MixingDDS/MixingDDS.xci"] \
- [file normalize "${origin_dir}/sources/ip/OutputMultiplier/OutputMultiplier.xci"] \
- [file normalize "${origin_dir}/sources/ip/FreqStreamDDS/FreqStreamDDS.xci"] \
- [file normalize "${origin_dir}/sources/ip/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"] \
+ [file normalize "${origin_dir}/sources/rtl-250/ADC_Data_Input.vhd"] \
+ [file normalize "${origin_dir}/sources/ip-250/FIFO_Continuous/FIFO_Continuous.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/BlockMemDPG/BlockMemDPG.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/PID_Multipliers/PID_Multipliers.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/PhaseCalc/PhaseCalc.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/CIC_Decimate/CIC_Decimate.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/MultMixer/MultMixer.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/MixingDDS/MixingDDS.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/OutputMultiplier/OutputMultiplier.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/FreqStreamDDS/FreqStreamDDS.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"] \
  [file normalize "${origin_dir}/sources/rtl/AXI_Bus_Package.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/BlockMemoryController.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/DualChannelDDS.vhd"] \
@@ -311,12 +311,12 @@ set files [list \
  [file normalize "${origin_dir}/sources/rtl/PhaseCalculation.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/PhaseControl.vhd"] \
  [file normalize "${origin_dir}/sources/rtl/TimingController.vhd"] \
- [file normalize "${origin_dir}/sources/rtl/topmod.vhd"] \
- [file normalize "${origin_dir}/sources/system/system.bd"] \
- [file normalize "${origin_dir}/sources/system/system_wrapper.vhd"] \
- [file normalize "${origin_dir}/sources/ip/MultFilter/MultFilter.xci"] \
- [file normalize "${origin_dir}/sources/ip/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"] \
- [file normalize "${origin_dir}/sources/ip/BlockMem/BlockMem.xci"] \
+ [file normalize "${origin_dir}/sources/rtl-250/topmod.vhd"] \
+ [file normalize "${origin_dir}/sources/system-250/system.bd"] \
+ [file normalize "${origin_dir}/sources/system-250/system_wrapper.vhd"] \
+ [file normalize "${origin_dir}/sources/ip-250/MultFilter/MultFilter.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"] \
+ [file normalize "${origin_dir}/sources/ip-250/BlockMem/BlockMem.xci"] \
  [file normalize "${origin_dir}/sources/rtl/SaveADCData.vhd"] \
 ]
 add_files -norecurse -fileset $obj $files
@@ -346,7 +346,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/rtl/ADC_Data_Input.vhd"
+set file "$origin_dir/sources/rtl-250/ADC_Data_Input.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -358,7 +358,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/FIFO_Continuous/FIFO_Continuous.xci"
+set file "$origin_dir/sources/ip-250/FIFO_Continuous/FIFO_Continuous.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -375,7 +375,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/BlockMemDPG/BlockMemDPG.xci"
+set file "$origin_dir/sources/ip-250/BlockMemDPG/BlockMemDPG.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -392,7 +392,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/PID_Multipliers/PID_Multipliers.xci"
+set file "$origin_dir/sources/ip-250/PID_Multipliers/PID_Multipliers.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -409,7 +409,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/PhaseCalc/PhaseCalc.xci"
+set file "$origin_dir/sources/ip-250/PhaseCalc/PhaseCalc.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -426,7 +426,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/CIC_Decimate/CIC_Decimate.xci"
+set file "$origin_dir/sources/ip-250/CIC_Decimate/CIC_Decimate.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -443,7 +443,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/MultMixer/MultMixer.xci"
+set file "$origin_dir/sources/ip-250/MultMixer/MultMixer.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -460,7 +460,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/MixingDDS/MixingDDS.xci"
+set file "$origin_dir/sources/ip-250/MixingDDS/MixingDDS.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -477,7 +477,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/OutputMultiplier/OutputMultiplier.xci"
+set file "$origin_dir/sources/ip-250/OutputMultiplier/OutputMultiplier.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -494,7 +494,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/FreqStreamDDS/FreqStreamDDS.xci"
+set file "$origin_dir/sources/ip-250/FreqStreamDDS/FreqStreamDDS.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -511,7 +511,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"
+set file "$origin_dir/sources/ip-250/FreqPhaseStreamDDS/FreqPhaseStreamDDS.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -624,7 +624,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/rtl/topmod.vhd"
+set file "$origin_dir/sources/rtl-250/topmod.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -636,7 +636,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/system/system.bd"
+set file "$origin_dir/sources/system-250/system.bd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "exclude_debug_logic" -value "0" -objects $file_obj
@@ -654,7 +654,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/system/system_wrapper.vhd"
+set file "$origin_dir/sources/system-250/system_wrapper.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -666,7 +666,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/MultFilter/MultFilter.xci"
+set file "$origin_dir/sources/ip-250/MultFilter/MultFilter.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -686,7 +686,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"
+set file "$origin_dir/sources/ip-250/MixerDDS_PhaseOffset/MixerDDS_PhaseOffset.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -706,7 +706,7 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/ip/BlockMem/BlockMem.xci"
+set file "$origin_dir/sources/ip-250/BlockMem/BlockMem.xci"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
@@ -802,7 +802,7 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 set obj [get_filesets sim_1]
 set files [list \
  [file normalize "${origin_dir}/sources/sim/AXI_Tester.vhd"] \
- [file normalize "${origin_dir}/sources/sim/topmod_tb.vhd"] \
+ [file normalize "${origin_dir}/sources/sim/topmod_250_tb.vhd"] \
  [file normalize "${origin_dir}/sources/sim/PhaseControl_tb.vhd"] \
  [file normalize "${origin_dir}/sources/sim/CIC_tb.vhd"] \
  [file normalize "${origin_dir}/sources/sim/PIController_tb.vhd"] \
@@ -829,7 +829,7 @@ set_property -name "used_in" -value "synthesis simulation" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "$origin_dir/sources/sim/topmod_tb.vhd"
+set file "$origin_dir/sources/sim/topmod_250_tb.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -983,7 +983,7 @@ set_property -name "nl.sdf_anno" -value "1" -objects $obj
 set_property -name "nl.write_all_overrides" -value "0" -objects $obj
 set_property -name "source_set" -value "sources_1" -objects $obj
 set_property -name "systemc_include_dirs" -value "" -objects $obj
-set_property -name "top" -value "topmod_tb" -objects $obj
+set_property -name "top" -value "topmod_250_tb" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "transport_int_delay" -value "0" -objects $obj
