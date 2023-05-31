@@ -145,7 +145,8 @@ end component;
 --
 component TimingController is
     port(
-        clk         :   in  std_logic;
+        wrclk       :   in  std_logic;
+        rdclk       :   in  std_logic;
         aresetn     :   in  std_logic;
         reset_i     :   in  std_logic;
 
@@ -153,7 +154,7 @@ component TimingController is
         valid_i     :   in  std_logic;
 
         start_i     :   in  std_logic;
-        debug_o     :   out std_logic_vector(7 downto 0);
+        debug_o     :   out std_logic_vector(31 downto 0);
         data_o      :   out t_timing_control
     );
 end component;
@@ -229,7 +230,7 @@ signal tcData       :   t_param_reg;
 signal tcReset      :   std_logic;
 signal tcStart      :   std_logic;
 signal tc_o         :   t_timing_control;
-signal debug_o      :   std_logic_vector(7 downto 0);
+signal debug_o      :   std_logic_vector(31 downto 0);
 
 begin
 
@@ -245,8 +246,7 @@ ampSet(0) <= unsigned(topReg(19 downto 8));     --Manual amplitude control for o
 ampSet(1) <= unsigned(topReg(31 downto 20));    --Manual amplitude control for output 2
 
 regPhaseValid <= triggers(0);                                           --Indicates that a new CIC filter rate is valid
-tcStart <= triggers(1) or (not(disableExtTrig) and not(trig_i));        --Start the timing controller
-ext_o(0) <= trig_i;                                                     --Echoes the input trigger
+tcStart <= triggers(1) or (not(disableExtTrig) and not(ext_i(0)));      --Start the timing controller
 
 --
 -- DDS output signals.  dfSet is the static frequency difference set by the user
@@ -373,7 +373,8 @@ end generate FIFO_GEN;
 --
 TC: TimingController
 port map(
-    clk         =>  adcclk,
+    wrclk       =>  sysclk,
+    rdclk       =>  adcclk,
     aresetn     =>  aresetn,
     reset_i     =>  tcReset,
     data_i      =>  tcData,
@@ -477,29 +478,6 @@ begin
                                 comState <= finishing;
                                 bus_s.resp <= "11";
                         end case;
-                        
-                    --
-                    -- Read phase data
-                    --
-                    when X"02" =>
-                        if bus_m.valid(1) = '0' then
-                            bus_s.resp <= "11";
-                            comState <= finishing;
-                            mem_bus.m.trig <= '0';
-                            mem_bus.m.status <= idle;
-                        elsif mem_bus.s.valid = '1' then
-                            bus_s.data <= mem_bus.s.data;
-                            comState <= finishing;
-                            bus_s.resp <= "01";
-                            mem_bus.m.status <= idle;
-                            mem_bus.m.trig <= '0';
-                        elsif mem_bus.s.status = idle then
-                            mem_bus.m.addr <= bus_m.addr(MEM_ADDR_WIDTH + 1 downto 2);
-                            mem_bus.m.status <= waiting;
-                            mem_bus.m.trig <= '1';
-                         else
-                            mem_bus.m.trig <= '0';
-                        end if;
                     
                     when others => 
                         comState <= finishing;

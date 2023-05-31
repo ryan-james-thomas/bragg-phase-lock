@@ -3134,6 +3134,16 @@
             "left": "1",
             "right": "0"
           },
+          "ext_i": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "ext_o": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
           "adcData_i": {
             "direction": "I",
             "left": "31",
@@ -3243,7 +3253,8 @@
       },
       "exp_n_tri_io_1": {
         "ports": [
-          "exp_n_tri_io"
+          "exp_n_tri_io",
+          "topmod_0/ext_i"
         ]
       },
       "PS7_FCLK_CLK0": {
@@ -3254,6 +3265,7 @@
       },
       "topmod_0_ext_o": {
         "ports": [
+          "topmod_0/ext_o",
           "exp_p_tri_io"
         ]
       },

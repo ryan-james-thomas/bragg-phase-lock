@@ -307,13 +307,13 @@
           "proc_sys_reset_0": {
             "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
             "xci_name": "system_proc_sys_reset_0_0",
-            "xci_path": "ip\\system_proc_sys_reset_0_0\\system_proc_sys_reset_0_0.xci",
+            "xci_path": "ip/system_proc_sys_reset_0_0_1/system_proc_sys_reset_0_0.xci",
             "inst_hier_path": "PS/proc_sys_reset_0"
           },
           "processing_system7": {
             "vlnv": "xilinx.com:ip:processing_system7:5.5",
             "xci_name": "system_processing_system7_0",
-            "xci_path": "ip\\system_processing_system7_0\\system_processing_system7_0.xci",
+            "xci_path": "ip/system_processing_system7_0_1/system_processing_system7_0.xci",
             "inst_hier_path": "PS/processing_system7",
             "parameters": {
               "PCW_ACT_APU_PERIPHERAL_FREQMHZ": {
@@ -2151,7 +2151,7 @@
           "AXI_Parse_0": {
             "vlnv": "xilinx.com:module_ref:AXI_Parse:1.0",
             "xci_name": "system_AXI_Parse_0_0",
-            "xci_path": "ip\\system_AXI_Parse_0_0\\system_AXI_Parse_0_0.xci",
+            "xci_path": "ip/system_AXI_Parse_0_0_1/system_AXI_Parse_0_0.xci",
             "inst_hier_path": "PS/AXI_Parse_0",
             "reference_info": {
               "ref_type": "hdl",
@@ -2421,7 +2421,7 @@
           "xlconcat_0": {
             "vlnv": "xilinx.com:ip:xlconcat:2.1",
             "xci_name": "system_xlconcat_0_0",
-            "xci_path": "ip\\system_xlconcat_0_0\\system_xlconcat_0_0.xci",
+            "xci_path": "ip/system_xlconcat_0_0_1/system_xlconcat_0_0.xci",
             "inst_hier_path": "PS/xlconcat_0",
             "parameters": {
               "NUM_PORTS": {
@@ -2432,7 +2432,7 @@
           "axi_protocol_convert_0": {
             "vlnv": "xilinx.com:ip:axi_protocol_converter:2.1",
             "xci_name": "system_axi_protocol_convert_0_0",
-            "xci_path": "ip\\system_axi_protocol_convert_0_0\\system_axi_protocol_convert_0_0.xci",
+            "xci_path": "ip/system_axi_protocol_convert_0_0/system_axi_protocol_convert_0_0.xci",
             "inst_hier_path": "PS/axi_protocol_convert_0",
             "interface_ports": {
               "S_AXI": {
@@ -2445,6 +2445,18 @@
           }
         },
         "interface_nets": {
+          "Conn1": {
+            "interface_ports": [
+              "DDR",
+              "processing_system7/DDR"
+            ]
+          },
+          "Conn2": {
+            "interface_ports": [
+              "FIXED_IO",
+              "processing_system7/FIXED_IO"
+            ]
+          },
           "axi_protocol_convert_0_M_AXI": {
             "interface_ports": [
               "axi_protocol_convert_0/M_AXI",
@@ -2455,18 +2467,6 @@
             "interface_ports": [
               "axi_protocol_convert_0/S_AXI",
               "processing_system7/M_AXI_GP0"
-            ]
-          },
-          "Conn2": {
-            "interface_ports": [
-              "FIXED_IO",
-              "processing_system7/FIXED_IO"
-            ]
-          },
-          "Conn1": {
-            "interface_ports": [
-              "DDR",
-              "processing_system7/DDR"
             ]
           }
         },
@@ -2628,7 +2628,7 @@
           "clk_wiz_0": {
             "vlnv": "xilinx.com:ip:clk_wiz:6.0",
             "xci_name": "system_clk_wiz_0_0",
-            "xci_path": "ip\\system_clk_wiz_0_0\\system_clk_wiz_0_0.xci",
+            "xci_path": "ip/system_clk_wiz_0_0_1/system_clk_wiz_0_0.xci",
             "inst_hier_path": "ADC_Processing/clk_wiz_0",
             "parameters": {
               "CLKIN1_JITTER_PS": {
@@ -2708,7 +2708,7 @@
           "ADC_Data_Input_0": {
             "vlnv": "xilinx.com:module_ref:ADC_Data_Input:1.0",
             "xci_name": "system_ADC_Data_Input_0_0",
-            "xci_path": "ip\\system_ADC_Data_Input_0_0\\system_ADC_Data_Input_0_0.xci",
+            "xci_path": "ip/system_ADC_Data_Input_0_0_1/system_ADC_Data_Input_0_0.xci",
             "inst_hier_path": "ADC_Processing/ADC_Data_Input_0",
             "reference_info": {
               "ref_type": "hdl",
@@ -2952,7 +2952,7 @@
       "topmod_0": {
         "vlnv": "xilinx.com:module_ref:topmod:1.0",
         "xci_name": "system_topmod_0_0",
-        "xci_path": "ip\\system_topmod_0_0\\system_topmod_0_0.xci",
+        "xci_path": "ip/system_topmod_0_0/system_topmod_0_0.xci",
         "inst_hier_path": "topmod_0",
         "reference_info": {
           "ref_type": "hdl",
@@ -3069,16 +3069,16 @@
       }
     },
     "interface_nets": {
-      "PS_DDR": {
-        "interface_ports": [
-          "DDR",
-          "PS/DDR"
-        ]
-      },
       "PS_FIXED_IO": {
         "interface_ports": [
           "FIXED_IO",
           "PS/FIXED_IO"
+        ]
+      },
+      "PS_DDR": {
+        "interface_ports": [
+          "DDR",
+          "PS/DDR"
         ]
       }
     },

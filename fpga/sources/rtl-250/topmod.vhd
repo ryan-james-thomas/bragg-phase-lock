@@ -552,7 +552,7 @@ begin
                         end case;
                         
                     --
-                    -- Read phase data
+                    -- Read ADC data
                     --
                     when X"02" =>
                         if bus_m.valid(1) = '0' then
