@@ -1,5 +1,3 @@
-# from bitstring import BitArray
-# import serial
 import time
 import types
 import subprocess

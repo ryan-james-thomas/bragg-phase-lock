@@ -1,27 +1,48 @@
 classdef IOSettings < handle
+    %IOSettings Defines a class for handling I/O settings for the SIGNALlab
+    %board, as it has software-settable DAC gains, ADC attenuations, and
+    %ADC couplings.
+    %
     properties
-        attenuation
-        gain
-        coupling
+        attenuation     %Attenuation values
+        gain            %Gain values
+        coupling        %Coupling values
     end
     
     properties(SetAccess = immutable)
-        parent
+        parent          %Parent object
     end
     
     methods
         function self = IOSettings(parent)
+            %IOSETTINGS Constructs an instance of the IOSettings class
+            %
+            %   SELF = IOSETTINGS(PARENT) Constructs an object with parent
+            %   PARENT
+            %
             self.parent = parent;
             self.setDefaults;
         end
         
         function self = setDefaults(self)
+            %SETDEFAULTS Sets default values
+            %
+            %   The current default values are 'low' for all attenuations
+            %   and gains, and 'dc' for the couplings
+            %
             self.attenuation = {'low','low'};
             self.gain = {'low','low'};
             self.coupling = {'dc','dc'};
         end
         
         function r = convert_attenuation(self,ch)
+            %CONVERT_ATTENUATION Converts string values of the attenuation
+            %to a numeric value of either 0 or 1
+            %
+            %   R = SELF.CONVERT_ATTENUATION(CH) returns the numeric
+            %   attenuation value for channel CH.  If CH is not provided,
+            %   returns the value for both channels
+            %
             r = self.convert(self.attenuation);
             if nargin > 1
                 r = r(ch);
@@ -29,6 +50,13 @@ classdef IOSettings < handle
         end
         
         function r = convert_gain(self,ch)
+            %CONVERT_GAIN Converts string values of the gain
+            %to a numeric value of either 0 or 1
+            %
+            %   R = SELF.CONVERT_GAIN(CH) returns the numeric
+            %   gain value for channel CH.  If CH is not provided,
+            %   returns the value for both channels
+            %
             r = self.convert(self.gain);
             if nargin > 1
                 r = r(ch);
@@ -36,6 +64,13 @@ classdef IOSettings < handle
         end
         
         function r = convert_coupling(self,ch)
+            %CONVERT_COUPLING Converts string values of the coupling
+            %to a numeric value of either 0 or 1
+            %
+            %   R = SELF.CONVERT_COUPLING(CH) returns the numeric
+            %   coupling value for channel CH.  If CH is not provided,
+            %   returns the value for both channels
+            %
             r = self.convert(self.coupling);
             if nargin > 1
                 r = r(ch);
@@ -43,10 +78,10 @@ classdef IOSettings < handle
         end
         
         function self = write(self)
+            %WRITE Writes the IOSettings to the device.
             for nn = 1:numel(self.attenuation)
                 self.parent.conn.write(0,'mode','command','cmd',...
                     {'./setGain','-i','-p',sprintf('%d',nn),'-v',sprintf('%d',self.convert(self.attenuation{nn}))});
-                
             end
             
             for nn = 1:numel(self.gain)
@@ -61,6 +96,13 @@ classdef IOSettings < handle
         end
         
         function varargout = print(self,width)
+            %PRINT Prints the current IO settings
+            %
+            %   SELF.PRINT(WIDTH) Prints the current settings with a string
+            %   width of WIDTH to the command line
+            %
+            %   R = SELF.PRINT(WIDTH) Returns a string describing the
+            %   current IO settings to R.
             s{1} = sprintf(['% ',num2str(width),'s: %s\n'],'Input atten. [1]',self.attenuation{1});
             s{2} = sprintf(['% ',num2str(width),'s: %s\n'],'Input atten. [2]',self.attenuation{2});
             s{3} = sprintf(['% ',num2str(width),'s: %s\n'],'Output gain [1]',self.gain{1});
@@ -82,6 +124,10 @@ classdef IOSettings < handle
     
     methods(Static)
         function r = convert(s)
+            %CONVERT Converts string values for the attenuation, gain, or
+            %coupling to numeric values.
+            %
+            %   R = CONVERT(S) Converts string values to numeric values R
             if iscell(s) && numel(s) > 1
                 for nn = 1:numel(s)
                     r(nn,1) = IOSettings.convert(s{nn}); %#ok<AGROW>

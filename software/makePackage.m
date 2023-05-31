@@ -1,4 +1,16 @@
 function makePackage(t,ph,amp,freq,flags)
+%MAKEPACKAGE This function makes a VHDL package for simulation that has a
+%real pulse shape for testing the timing controller and phase lock.
+%
+%   MAKEPACKAGE(T,PH,AMP,FREQ,FLAGS) makes the package with times T in
+%   seconds, phases PH in radians, amplitude scale factors AMP (numel(T) x
+%   2 array) as values from 0 to 1, frequency difference values FREQ in
+%   MHz, and flags FLAGS.  See the PhaseLockAbstract.uploadTiming method
+%   for more information.
+%
+%   The VHDL package is given the name DataPackage.vhd and places in the
+%   fpga/sources/sim/ directory.
+%
 
 t = t(:);
 ph = ph(:);

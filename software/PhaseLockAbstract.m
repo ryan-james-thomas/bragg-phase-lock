@@ -1,38 +1,33 @@
-classdef PhaseLock < handle
+classdef (Abstract) PhaseLockAbstract < handle
+    %PhaseLockAbstract is an abstract class for interfacing with the phase
+    %lock design on either the STEMlab or SIGNALlab boards.
+    %
+    % Parameters that can be controlled on the FPGA are represented by the
+    % DeviceParameter class, and registers are represented by the
+    % DeviceRegister class.  
     properties
-        t
-        data
+        t           %Time data
+        data        %Data retrieved from the FPGA
     end
     
     properties(SetAccess = immutable)
         conn        %ConnectionClient object for communicating with device
-        %
-        % IO settings
-        %
-        settings    %I/O settings as IOsettings object
-        %
-        % Top-level properties
-        %
+
+        %% Top-level properties        
         shift       %Shift right by this
         useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
         useManual   %True to use manual values, false to use timing controller values
         useTCDemod  %True to use the TC df output as the OUT1 frequency and demod freq, for testing
         disableExtTrig %Set to true to disable the external trigger
-        %
-        % Frequency parameters
-        %
+        %% Frequency parameters
         f0          %Center frequency
         df          %Difference frequency
         demod       %Demodulation frequency
         amp         %Amplitude
-        %
-        % Phase calculation parameters
-        %
+        %% Phase calculation parameters
         cicRate     %Log2(CIC rate reduction)
         cicShift    %Number of bits to shift right by after filtering
-        %
-        % Phase control parameters
-        %
+        %% Phase control parameters
         phasec      %Manual control phase
         enableFB    %Enable feedback
         polarity    %Feedback polarity
@@ -40,18 +35,11 @@ classdef PhaseLock < handle
         Ki          %Integral gain
         Kd          %Derivative gain
         divisor     %Overall divisor
-        %
-        % Debugging signals
-        %
-        numSamples  %Number of samples to store in RAM
-        lastSample  %Last sample stored in RAM
-        adc
+
     end
     
     properties(SetAccess = protected)
-        %
-        % R/W registers
-        %
+        %% R/W registers
         trigReg             %Trigger register
         topReg              %Top-level register
         freqOffsetReg       %Register for common DDS frequency
@@ -64,18 +52,14 @@ classdef PhaseLock < handle
         numSamplesReg       %Register for number of samples
         lastSampleReg       %Register for the last sample
         adcReg
-        %
-        % Read-only register
-        %
-        auxReg
-        %
-        % Write-only register
-        %
-        timingReg
+        %% Read-only register
+        auxReg              %Auxiliary register for debugging signals
+        %% Write-only register
+        timingReg           %Register for writing timing contro
     end
     
     properties(Constant)
-        CLK = 250e6;                    %Clock frequency of the board
+%         CLK = 250e6;                    %Clock frequency of the board
         HOST_ADDRESS = '192.168.1.109'; %Default socket server address
         DDS_WIDTH = 27;                 %Bit width of the DDS phase inputs
         CORDIC_WIDTH = 24;              %Bit width of the measured phase
@@ -84,16 +68,24 @@ classdef PhaseLock < handle
         ADC_WIDTH = 14;                 %Bit width of ADC
     end
     
+    properties(Constant,Abstract)
+        CLK                             %Clock frequency of the board
+    end
+    
     methods
-        function self = PhaseLock(varargin)
-            if numel(varargin)==1
+        function self = PhaseLockAbstract(varargin)
+            %PhaseLockAbstract Constructor for this abstract class.
+            %
+            % SELF = PhaseLockAbstract(HOST_ADDRESS) constructs a
+            % PhaseLockAbstract object using the given HOST_ADDRESS for
+            % connecting to the remote server.  HOST_ADDRESS can be
+            % neglected, in which case the default HOST_ADDRESS is used
+            if numel(varargin) == 1
                 self.conn = ConnectionClient(varargin{1});
             else
                 self.conn = ConnectionClient(self.HOST_ADDRESS);
             end
-            
-            self.settings = IOSettings(self);
-            
+
             % R/W registers
             self.trigReg = DeviceRegister('0',self.conn);
             self.topReg = DeviceRegister('4',self.conn);
@@ -119,12 +111,6 @@ classdef PhaseLock < handle
             %
             self.timingReg = DeviceRegister('00000034',self.conn);
             %
-            % Debugging registers
-            %
-            self.numSamplesReg = DeviceRegister('38',self.conn);
-            self.lastSampleReg = DeviceRegister('01000020',self.conn);
-            self.adcReg = DeviceRegister('01000024',self.conn);
-            %
             % Top-level parameters
             %
             self.shift = DeviceParameter([0,3],self.topReg)...
@@ -137,8 +123,7 @@ classdef PhaseLock < handle
             self.useTCDemod = DeviceParameter([6,6],self.topReg)...
                 .setLimits('lower',0,'upper',1);
             self.disableExtTrig = DeviceParameter([7,7],self.topReg)...
-                .setLimits('lower',0,'upper',1);
-            
+                .setLimits('lower',0,'upper',1);            
             %
             % Frequency generation
             %
@@ -195,21 +180,11 @@ classdef PhaseLock < handle
             self.divisor = DeviceParameter([24,31],self.phaseGainReg)...
                 .setLimits('lower',0,'upper',255)...
                 .setFunctions('to',@(x) x,'from',@(x) x);
-            %
-            % Debugging signals
-            %
-            self.numSamples = DeviceParameter([0,13],self.numSamplesReg)...
-                .setLimits('lower',0,'upper',2^14 - 1);
-            self.lastSample = DeviceParameter([0,31],self.lastSampleReg);
-            self.adc = DeviceParameter([0,15],self.adcReg,'int16')...
-                .setFunctions('from',@(x) self.convertADC(x,'volt',1));
-            self.adc(2) = DeviceParameter([16,31],self.adcReg,'int16')...
-                .setFunctions('from',@(x) self.convertADC(x,'volt',2));
         end
         
-        function self = setDefaults(self,varargin)
-            self.settings.setDefaults;
-            self.settings.coupling = {'ac','ac'};
+        function self = setDefaults(self)
+            %SETDEFAULTS Sets the default values
+            
             %
             % Top-level parameters
             %
@@ -240,12 +215,7 @@ classdef PhaseLock < handle
             self.Kp.set(50);
             self.Ki.set(140);
             self.Kd.set(0);
-            self.divisor.set(11);
-            %
-            % Debugging signals
-            %
-            self.numSamples.set(16e3);
-            
+            self.divisor.set(11);            
         end
         
         function self = check(self)
@@ -253,8 +223,9 @@ classdef PhaseLock < handle
         end
         
         function self = upload(self)
+            %UPLOAD Uploads all registers and sends an update CIC rate flag
+            %to the device at the end
             self.check;
-%             self.settings.write;
             self.topReg.write;
             self.freqOffsetReg.write;
             self.freqDiffReg.write;
@@ -263,11 +234,13 @@ classdef PhaseLock < handle
             self.phaseCalcReg.write;
             self.phaseControlReg.write;
             self.phaseGainReg.write;
-            self.numSamplesReg.write;
             self.updateCIC;
         end
         
         function self = fetch(self)
+            %FETCH Retrieves all current register values and parses them
+            %for parameters
+            
             %Read registers
             self.topReg.read;
             self.freqOffsetReg.read;
@@ -277,9 +250,6 @@ classdef PhaseLock < handle
             self.phaseCalcReg.read;
             self.phaseControlReg.read;
             self.phaseGainReg.read;
-            self.numSamplesReg.read;
-            self.lastSampleReg.read;
-            self.adcReg.read;
             %Read parameters
             self.shift.get;
             self.useSetDemod.get;
@@ -300,14 +270,14 @@ classdef PhaseLock < handle
             self.Ki.get;
             self.Kd.get;
             self.divisor.get;
-            
-            self.numSamples.get;
-            self.lastSample.get;
-            self.adc(1).get;
-            self.adc(2).get;
         end
         
         function data = readOnly(self)
+            %READONLY Reads the read-only registers and returns a data
+            %structure with their values
+            %
+            %   DATA = SELF.READONLY() Returns data structure DATA with
+            %   read-only parameters
             %df
             self.auxReg.addr = '01000000';
             self.auxReg.read;
@@ -350,22 +320,34 @@ classdef PhaseLock < handle
         end
         
         function self = start(self)
+            %START Sends a software start trigger to the FPGA.
             self.trigReg.set(1,[1,1]).write;
             self.trigReg.set(0,[1,1]);
         end
         
         function self = resetTC(self)
+            %RESETTC Resets the timing controller. This is needed before
+            %upload because the timing controller assumes all new data
+            %should be appended to existing data
             self.trigReg.set(1,[3,3]).write;
             self.trigReg.set(0,[3,3]);
         end
         
         function self = updateCIC(self)
+            %UPDATECIC Sends a trigger to update the CIC rate for the phase
+            %calculation
             self.trigReg.set(1,[0,0]).write;
             self.trigReg.set(0,[0,0]);
         end
         
-        function r = convertDAC(self,v,direction,ch)
-            g = (self.settings.convert_gain(ch) == 0)*1 + (self.settings.convert_gain(ch) == 1)*5;
+        function r = convertDAC(self,v,direction,~)
+            %CONVERTDAC Converts DAC values from integers to volts or from
+            %volts to integers
+            %
+            %   R = SELF.CONVERTDAC(V,DIRECTION) converts value V in the
+            %   direction given by DIRECTION, either 'int' or 'volt'
+            %
+            g = 1;
             if strcmpi(direction,'int')
                 r = v/(g*2)*(2^(self.DAC_WIDTH - 1) - 1);
             elseif strcmpi(direction,'volt')
@@ -373,8 +355,13 @@ classdef PhaseLock < handle
             end
         end
         
-        function r = convertADC(self,v,direction,ch)
-            g = (self.settings.convert_attenuation(ch) == 0)*1.1 + (self.settings.convert_attenuation(ch) == 1)*20;
+        function r = convertADC(self,v,direction,~)
+            %CONVERTADC Converts ADC values from integers to volts or from
+            %volts to integers
+            %
+            %   R = SELF.CONVERTADC(V,DIRECTION) converts value V in the
+            %   direction given by DIRECTION, either 'int' or 'volt'
+            %
             if strcmpi(direction,'int')
                 r = v/(g)*(2^(self.ADC_WIDTH + 1) - 1);
             elseif strcmpi(direction,'volt')
@@ -383,16 +370,51 @@ classdef PhaseLock < handle
         end
         
         function r = dt(self)
+            %DT Computes the time step between updates from the CIC filter
+            %
+            %   R = SELF.DT() returns the CIC time step
             r = 2^self.cicRate.value/self.CLK;
         end
         
         function [Kp,Ki,Kd] = calcRealGains(self)
+            %CALCREALGAINS Calculates the continuous-equivalent values of
+            %the PID gains
+            %
+            %   [Kp,Ki,Kd] = SELF.CALCREALGAINS() returns proportional,
+            %   integral, and derivative gains Kp, Ki, and Kd.
             Kp = self.Kp.value/2^self.divisor.value;
             Ki = self.Ki.value/(2^self.divisor.value*self.dt);
             Kd = self.Kd.value*self.dt/2^self.divisor.value;
         end
         
         function self = getPhaseData(self,numSamples,saveFlags,startFlag,saveType)
+            %GETPHASEDATA Retrieves recorded phase data from the phase lock
+            %
+            %   Phase data is stored in the DATA property of the class, and
+            %   timing information in the T property.
+            %
+            %   SELF.GETPHASEDATA(NUMSAMPLES) Returns NUMSAMPLES samples of
+            %   only the directly measured phase.  The timing controller is
+            %   not triggered prior to retrieving data.
+            %
+            %   SELF.GETPHASEDATA(__,SAVEFLAGS) gets phase data according
+            %   the save flags, which are formatted as standard GNU flags.
+            %   Use -p for the directly measured phase, -s for the
+            %   phase-unwrapped re-summed phase, and -d for the phase that
+            %   is applied to the DDS.  These can be combined as -psd or
+            %   -ps or any such combination.
+            %
+            %   SELF.GETPHASEDATA(__,STARTFLAG) Set to 1 to trigger the
+            %   timing controller prior to phase acquisition.  Set to 0 to
+            %   not trigger.
+            %
+            %   SELF.GETPHASEDATA(__,SAVETYPE) Method for saving data in
+            %   the C program running on the device.  Set to 0 to print
+            %   data to terminal. Set to 1 to save to RAM before writing to
+            %   a file and then sending over TCP/IP, and set to 2 to save
+            %   directly to a file before sending over TCP/IP.  Default is
+            %   1, and this likely never needs to change.
+            %
             if nargin < 3
                 saveFlags = '-p';
             end
@@ -416,6 +438,21 @@ classdef PhaseLock < handle
         end
         
         function uploadTiming(self,t,ph,amp,freq,flags)
+            %UPLOADTIMING Uploads timing controller data to the FPGA
+            %
+            %   SELF.UPLOADTIMING(T,PH,AMP,FREQ) Uploads timing data given
+            %   by times T (in seconds), phase PH in radians, DDS scale
+            %   factors AMP as an numel(T) x 2 array of values between 0
+            %   and 1, and frequency FREQ as the frequency difference
+            %   between the two DDS in MHz.
+            %
+            %   SELF.UPLOADTIMING(__,FLAGS) Additionally uploads flags
+            %   FLAGS to the device.  FLAGS is a 4 bit signal in the timing
+            %   controller.  Bit 0 of FLAGS enables the PID controller when
+            %   high and disables when low.  Bit 1 of FLAGS holds the
+            %   PID controller when high and resumes the PID controller
+            %   when low.
+            %
             t = t(:);
             ph = ph(:);
             if size(amp,2) ~= 2
@@ -463,38 +500,11 @@ classdef PhaseLock < handle
                 {'./writeFile',sprintf('%d',round(numel(d) - 1))});
         end
         
-        function [d,t] = getRAM(self,numSamples)
-            %
-            % Trigger acquisition
-            %
-            self.trigReg.set(1,[4,4]).write;
-            self.trigReg.set(0,[4,4]);
-            pause(1e-3);
-            %
-            % Get last sample
-            %
-            if nargin < 2
-%                 self.conn.keepAlive = true;
-                self.lastSample.read;
-%                 self.conn.keepAlive = false;
-                numSamples = self.lastSample.value;
-            end
-            self.conn.write(0,'mode','command','cmd',...
-                {'./fetchRAM',sprintf('%d',round(numSamples))},...
-                'return_mode','file');
-            raw = typecast(self.conn.recvMessage,'uint8');
-            
-            d = self.convertRAMData(raw);
-            for nn = 1:size(d,2)
-                d(:,nn) = self.convertADC(d(:,nn),'volt',nn);
-            end
-            dt = self.CLK^-1;
-            t = dt*(0:(size(d,1)-1));
-        end
-        
         function disp(self)
+            %DISP Displays information about the current PhaseLockAbstract
+            %object
             strwidth = 36;
-            fprintf(1,'PhaseLock object with properties:\n');
+            fprintf(1,'PhaseLockAbstract object with properties:\n');
             fprintf(1,'\t Registers\n');
             self.topReg.print('topReg',strwidth);
             self.freqOffsetReg.print('freqOffsetReg',strwidth);
@@ -504,8 +514,6 @@ classdef PhaseLock < handle
             self.phaseCalcReg.print('phaseCalcReg',strwidth);
             self.phaseControlReg.print('phaseControlReg',strwidth);
             self.phaseGainReg.print('phaseGainReg',strwidth);
-            self.numSamplesReg.print('Num. Samples. Reg',strwidth);
-            self.lastSampleReg.print('Memory register',strwidth);
             fprintf(1,'\t ----------------------------------\n');
             fprintf(1,'\t Top-level parameters\n');
             self.shift.print('Freq. difference shift',strwidth,'%d');
@@ -533,12 +541,6 @@ classdef PhaseLock < handle
             self.Ki.print('Integral gain',strwidth,'%d');
             self.Kd.print('Derivative gain',strwidth,'%d');
             self.divisor.print('Overall divisor',strwidth,'%d');  
-            fprintf(1,'\t ----------------------------------\n');
-            fprintf(1,'\t Debugging parameters\n');
-            self.numSamples.print('Number of samples',strwidth,'%d');
-            self.lastSample.print('Samples collected',strwidth,'%d');
-            self.adc(1).print('ADC 1',strwidth,'%.3f');
-            self.adc(2).print('ADC 2',strwidth,'%.3f');
         end
         
         
@@ -546,6 +548,13 @@ classdef PhaseLock < handle
     
     methods(Static)
         function d = loadData(filename,dt,flags)
+            %LOADDATA Loads a binary file and returns phase and timing data
+            %
+            %   D = LOADDATA(FILENAME,DT,FLAGS) Loads the file FILENAME
+            %   with time step DT and flags FLAGS which indicate how to
+            %   convert the saved data into phase values. If FILENAME is
+            %   not given it is assumed to be SavedData.bin
+            %
             if nargin == 0 || isempty(filename)
                 filename = 'SavedData.bin';
             end
@@ -570,6 +579,17 @@ classdef PhaseLock < handle
         end
         
         function varargout = convertData(raw,method,flags)
+            %CONVERTDATA Converts raw binary data into real values.
+            %
+            %   V = CONVERTDATA(RAW,'voltage') converts raw binary data RAW
+            %   into voltages V
+            %
+            %   PH = CONVERTDATA(RAW,'phase',FLAGS) converts RAW binary
+            %   data RAW into phase structure PH based on FLAGS.  FLAGS is
+            %   a 3-bit value where each bit indicates what phases are
+            %   included in the raw data.  Bit 0: measured phase. Bit 1:
+            %   unwrapped, re-summed phase. Bit 2: actuator/DDS phase.
+            %
             if nargin < 3 || isempty(flags)
                 streams = 1;
             else
