@@ -14,7 +14,7 @@ classdef (Abstract) PhaseLockAbstract < handle
         conn        %ConnectionClient object for communicating with device
 
         %% Top-level properties        
-        shift       %Shift right by this
+        shift       %Shift left by this
         useSetDemod %True to use a fixed demodulation frequency, false to use shifted value
         useManual   %True to use manual values, false to use timing controller values
         useTCDemod  %True to use the TC df output as the OUT1 frequency and demod freq, for testing
